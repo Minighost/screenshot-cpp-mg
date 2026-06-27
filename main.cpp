@@ -45,6 +45,7 @@ int main(int argc, char* argv[])
 
     QThread* thread = QThread::create([&comm]() { hotkeyThread(&comm); });
     thread->setObjectName("HotkeyThread");
+    thread->setParent(&app);
     thread->start();
 
     return app.exec();
