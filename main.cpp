@@ -5,7 +5,7 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
     QWidget window;
-    window.setWindowTitle("Hello Qt6");
+    window.setWindowTitle("screenshot-mg");
     window.show();
     return app.exec();
 }
