@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     tray.setToolTip("Screenshot Tool");
 
     QMenu* menu = new QMenu();
-    QAction* exitAction = new QAction("Exit");
+    QAction* exitAction = new QAction("Exit", menu);
     QObject::connect(exitAction, &QAction::triggered, &app, &QApplication::quit);
     menu->addAction(exitAction);
 
