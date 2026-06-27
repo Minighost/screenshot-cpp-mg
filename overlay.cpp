@@ -346,18 +346,11 @@ void CaptureOverlay::openPreview()
     if (_sel.isNull() || _screenshot.isNull())
         return;
 
-    _previewWindows.erase(
-        std::remove_if(_previewWindows.begin(), _previewWindows.end(),
-                       [](PreviewWindow *w)
-                       { return !w->isVisible(); }),
-        _previewWindows.end());
-
     QRect sel = _sel.normalized();
     QPixmap crop = _screenshot.copy(cropPhys(sel));
 
     PreviewWindow *window = new PreviewWindow();
     window->setPixmap(crop);
     window->show();
-    _previewWindows.append(window);
     cleanClose();
 }

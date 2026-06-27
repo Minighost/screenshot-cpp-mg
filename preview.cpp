@@ -29,6 +29,7 @@ PreviewWindow::PreviewWindow()
 {
     setWindowTitle("Preview");
     setWindowIcon(QIcon(":/screenshot-mg.ico"));
+    setAttribute(Qt::WA_DeleteOnClose);
 
     _view->setRenderHint(QPainter::Antialiasing);
     _view->setDragMode(QGraphicsView::ScrollHandDrag);
