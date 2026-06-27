@@ -49,7 +49,8 @@ CaptureOverlay::CaptureOverlay(QWidget* parent)
 
     _label->setStyleSheet(
         "color: white; background: rgba(0,0,0,160);"
-        "padding: 3px 6px; border-radius: 4px; font-size: 11px;");
+        "padding: 3px 6px; border-radius: 4px; font-size: 11px;"
+    );
     _label->hide();
 
     connect(_saveButton, &QPushButton::clicked, this, &CaptureOverlay::saveSelection);
@@ -343,13 +344,12 @@ void CaptureOverlay::copyToClipboard()
 
 void CaptureOverlay::openPreview()
 {
-    if (_sel.isNull() || _screenshot.isNull())
-        return;
+    if (_sel.isNull() || _screenshot.isNull()) return;
 
     QRect sel = _sel.normalized();
     QPixmap crop = _screenshot.copy(cropPhys(sel));
 
-    PreviewWindow *window = new PreviewWindow();
+    PreviewWindow* window = new PreviewWindow();
     window->setPixmap(crop);
     window->show();
     cleanClose();
