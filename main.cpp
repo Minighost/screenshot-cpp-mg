@@ -2,7 +2,9 @@
 #include <QThread>
 #include <QSystemTrayIcon>
 #include <QMenu>
+#include <QDebug>
 #include <windows.h>
+#include <future>
 #include "communicator.h"
 #include "overlay.h"
 
@@ -43,10 +45,32 @@ int main(int argc, char* argv[])
     QObject::connect(&comm, &Communicator::showOverlay, &overlay, &CaptureOverlay::show);
     QObject::connect(&comm, &Communicator::quitApp, &app, &QApplication::quit);
 
-    QThread* thread = QThread::create([&comm]() { hotkeyThread(&comm); });
+    std::promise<DWORD> threadIdPromise;
+    std::future<DWORD> threadIdFuture = threadIdPromise.get_future();
+
+    QThread* thread = QThread::create(
+        [&comm, &threadIdPromise]()
+        {
+            threadIdPromise.set_value(GetCurrentThreadId());
+            hotkeyThread(&comm);
+        }
+    );
     thread->setObjectName("HotkeyThread");
-    thread->setParent(&app);
     thread->start();
+
+    DWORD hotkeyThreadId = threadIdFuture.get();  // blocks until thread sets it
+    QObject::connect(
+        &app, &QCoreApplication::aboutToQuit,
+        [&]()
+        {
+            // qDebug() << "hotkeyThreadId:" << hotkeyThreadId;
+            BOOL result = PostThreadMessageW(hotkeyThreadId, WM_QUIT, 0, 0);
+            // qDebug() << "PostThreadMessageW result:" << result;
+            // qDebug() << "GetLastError:" << GetLastError();
+            thread->wait();
+            delete thread;
+        }
+    );
 
     return app.exec();
 }
