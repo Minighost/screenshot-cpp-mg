@@ -27,6 +27,9 @@ PreviewWindow::PreviewWindow()
       _toolbar(new QToolBar(this)),
       _zoomLabel(new QLabel("100%", this))
 {
+    setWindowTitle("Preview");
+    setWindowIcon(QIcon(":/screenshot-mg.ico"));
+
     _view->setRenderHint(QPainter::Antialiasing);
     _view->setDragMode(QGraphicsView::ScrollHandDrag);
     _view->setFrameShape(QFrame::NoFrame);

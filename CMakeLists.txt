@@ -14,6 +14,11 @@ qt_add_executable(ScreenshotTool
     preview.h
     utils.cpp
     utils.h
+    communicator.h
+)
+qt_add_resources(ScreenshotTool "resources"
+    PREFIX "/"
+    FILES screenshot-mg.ico
 )
 target_link_libraries(ScreenshotTool PRIVATE
     Qt6::Widgets
