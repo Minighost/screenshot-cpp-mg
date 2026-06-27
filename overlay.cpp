@@ -1,5 +1,6 @@
 #include "overlay.h"
-// #include "preview.h"
+#include "preview.h"
+#include "utils.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QCursor>
@@ -237,10 +238,10 @@ void CaptureOverlay::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Escape) { cleanClose(); }
     else if (event->key() == Qt::Key_S && event->modifiers() == Qt::ControlModifier) { saveSelection(); }
     else if (event->key() == Qt::Key_C && event->modifiers() == Qt::ControlModifier) { copyToClipboard(); }
-    // else if (event->key() == Qt::Key_C && event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
-    // {
-    //     openPreview();
-    // }
+    else if (event->key() == Qt::Key_C && event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
+    {
+        openPreview();
+    }
 }
 
 QRect CaptureOverlay::handleRect(int cx, int cy, int size) const
@@ -325,14 +326,7 @@ void CaptureOverlay::saveSelection()
     QRect sel = _sel.normalized();
     QPixmap crop = _screenshot.copy(cropPhys(sel));
 
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-    QString now = QDateTime::currentDateTime().toString("MM-dd-yyyy HHmmss");
-    QString defaultPath = dir + "/screenshot " + now + ".png";
-
-    QString path = QFileDialog::getSaveFileName(this, "Save Screenshot", defaultPath, "Images (*.png)");
-    if (path.isEmpty()) return;
-
-    crop.save(path);
+    savePixmap(crop, this);
     cleanClose();
 }
 
@@ -341,27 +335,29 @@ void CaptureOverlay::copyToClipboard()
     if (_sel.isNull() || _screenshot.isNull()) return;
 
     QRect sel = _sel.normalized();
-    QGuiApplication::clipboard()->setPixmap(_screenshot.copy(cropPhys(sel)));
+    QPixmap crop = _screenshot.copy(cropPhys(sel));
+
+    copyPixmap(crop);
     cleanClose();
 }
 
-// void CaptureOverlay::openPreview()
-// {
-//     if (_sel.isNull() || _screenshot.isNull())
-//         return;
+void CaptureOverlay::openPreview()
+{
+    if (_sel.isNull() || _screenshot.isNull())
+        return;
 
-//     _previewWindows.erase(
-//         std::remove_if(_previewWindows.begin(), _previewWindows.end(),
-//                        [](PreviewWindow *w)
-//                        { return !w->isVisible(); }),
-//         _previewWindows.end());
+    _previewWindows.erase(
+        std::remove_if(_previewWindows.begin(), _previewWindows.end(),
+                       [](PreviewWindow *w)
+                       { return !w->isVisible(); }),
+        _previewWindows.end());
 
-//     QRect sel = _sel.normalized();
-//     QPixmap crop = _screenshot.copy(cropPhys(sel));
+    QRect sel = _sel.normalized();
+    QPixmap crop = _screenshot.copy(cropPhys(sel));
 
-//     PreviewWindow *window = new PreviewWindow();
-//     window->setPixmap(crop);
-//     window->show();
-//     _previewWindows.append(window);
-//     cleanClose();
-// }
+    PreviewWindow *window = new PreviewWindow();
+    window->setPixmap(crop);
+    window->show();
+    _previewWindows.append(window);
+    cleanClose();
+}

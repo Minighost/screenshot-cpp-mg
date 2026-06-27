@@ -67,5 +67,5 @@ class CaptureOverlay : public QWidget
 
     void saveSelection();
     void copyToClipboard();
-    // void openPreview();
+    void openPreview();
 };
