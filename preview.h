@@ -34,7 +34,7 @@ class PreviewWindow : public QWidget
 
    private:
     QGraphicsScene* _scene;
-    QGraphicsPixmapItem* _pixmap_item;
+    QGraphicsPixmapItem* _pixmapItem;
     PreviewView* _view;
     QToolBar* _toolbar;
     QLabel* _zoomLabel;

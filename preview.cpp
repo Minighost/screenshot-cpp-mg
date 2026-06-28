@@ -23,7 +23,7 @@ void PreviewView::wheelEvent(QWheelEvent* event)
 PreviewWindow::PreviewWindow()
     : QWidget(),
       _scene(new QGraphicsScene(this)),
-      _pixmap_item(_scene->addPixmap(QPixmap())),
+      _pixmapItem(_scene->addPixmap(QPixmap())),
       _view(new PreviewView(_scene, this, [this](qreal scale) { _updateZoomLabel(scale); })),
       _toolbar(new QToolBar(this)),
       _zoomLabel(new QLabel("100%", this))
@@ -81,21 +81,21 @@ void PreviewWindow::keyPressEvent(QKeyEvent* event)
 
 void PreviewWindow::setPixmap(const QPixmap& pixmap)
 {
-    _pixmap_item->setPixmap(pixmap);
-    _scene->setSceneRect(_pixmap_item->boundingRect());
+    _pixmapItem->setPixmap(pixmap);
+    _scene->setSceneRect(_pixmapItem->boundingRect());
     _view->resetTransform();
     _view->setBaseSize(pixmap.width(), pixmap.height());
     adjustSize();
 }
 
-void PreviewWindow::_save() { savePixmap(_pixmap_item->pixmap(), this); }
+void PreviewWindow::_save() { savePixmap(_pixmapItem->pixmap(), this); }
 
-void PreviewWindow::_copy() { copyPixmap(_pixmap_item->pixmap()); }
+void PreviewWindow::_copy() { copyPixmap(_pixmapItem->pixmap()); }
 
 void PreviewWindow::_resetView()
 {
     _view->resetTransform();
-    _view->centerOn(_pixmap_item);
+    _view->centerOn(_pixmapItem);
     _updateZoomLabel(1);
 }
 
