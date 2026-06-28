@@ -15,6 +15,7 @@ qt_add_executable(ScreenshotTool
     utils.cpp
     utils.h
     communicator.h
+    drawcommands.h
 )
 qt_add_resources(ScreenshotTool "resources"
     PREFIX "/"
