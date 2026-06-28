@@ -2,6 +2,7 @@
 #include "utils.h"
 #include <QWheelEvent>
 #include <QVBoxLayout>
+#include <QStyle>
 
 PreviewView::PreviewView(QGraphicsScene* scene, QWidget* parent, std::function<void(qreal)> onZoom)
     : QGraphicsView(scene, parent), _onZoom(onZoom)
@@ -36,10 +37,32 @@ PreviewWindow::PreviewWindow()
     _view->setFrameShape(QFrame::NoFrame);
     _view->setFocusPolicy(Qt::NoFocus);
 
-    connect(_toolbar->addAction("Save"), &QAction::triggered, this, &PreviewWindow::_save);
-    connect(_toolbar->addAction("Copy"), &QAction::triggered, this, &PreviewWindow::_copy);
-    connect(_toolbar->addAction("Reset"), &QAction::triggered, this, &PreviewWindow::_resetView);
+    // Spacer for some extra padding on the left side
+    QWidget* spacer = new QWidget(this);
+    spacer->setFixedWidth(2);
+    _toolbar->addWidget(spacer);
+
+    QAction* saveAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_DialogSaveButton), "");
+    QAction* copyAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_FileIcon), "");
+    QAction* resetAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), "");
+
+    saveAction->setToolTip("Save (Ctrl+S)");
+    copyAction->setToolTip("Copy (Ctrl+C)");
+    resetAction->setToolTip("Reset zoom (R)");
+
+    connect(saveAction, &QAction::triggered, this, &PreviewWindow::_save);
+    connect(copyAction, &QAction::triggered, this, &PreviewWindow::_copy);
+    connect(resetAction, &QAction::triggered, this, &PreviewWindow::_resetView);
+
     _toolbar->addWidget(_zoomLabel);
+    _toolbar->setIconSize(QSize(16, 16));
+    _toolbar->setStyleSheet(
+        "QToolBar { padding: 4px; spacing: 4px; background: rgb(25, 35, 46) }"
+        "QToolButton { width: 24px; height: 24px; background: rgb(46, 46, 46); border-radius: 4px; }"
+        "QToolButton:hover { background: rgb(84, 84, 84); }"
+        "QLabel { padding: 4px; font-size: 16px }"
+    );
+    _toolbar->adjustSize();
 
     QVBoxLayout* layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);

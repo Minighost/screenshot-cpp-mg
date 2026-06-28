@@ -15,6 +15,7 @@
 #include <QPainter>
 #include <QScreen>
 #include <QStandardPaths>
+#include <QStyle>
 
 static const int HANDLE_DRAW_SIZE = 2;
 static const int HANDLE_HIT_SIZE = 5;
@@ -39,9 +40,9 @@ CaptureOverlay::CaptureOverlay(QWidget* parent)
       _dpr(1.0),
       _state(DRAG_NONE),
       _label(new QLabel(this)),
-      _saveButton(new QPushButton("💾", this)),
-      _copyButton(new QPushButton("📋", this)),
-      _cancelButton(new QPushButton("❌", this)),
+      _saveButton(new QPushButton(style()->standardIcon(QStyle::SP_DialogSaveButton), "", this)),
+      _copyButton(new QPushButton(style()->standardIcon(QStyle::SP_FileIcon), "", this)),
+      _cancelButton(new QPushButton(style()->standardIcon(QStyle::SP_DialogCancelButton), "", this)),
       _actionsBox(new QWidget(this))
 {
     setCursor(Qt::ArrowCursor);
@@ -53,15 +54,20 @@ CaptureOverlay::CaptureOverlay(QWidget* parent)
     );
     _label->hide();
 
-    connect(_saveButton, &QPushButton::clicked, this, &CaptureOverlay::saveSelection);
-    connect(_copyButton, &QPushButton::clicked, this, &CaptureOverlay::copyToClipboard);
-    connect(_cancelButton, &QPushButton::clicked, this, &CaptureOverlay::cleanClose);
+    _saveButton->setToolTip("Save (Ctrl+S)");
+    _copyButton->setToolTip("Copy (Ctrl+C)");
+    _cancelButton->setToolTip("Cancel (Esc)");
 
     for (QPushButton* btn : {_saveButton, _copyButton, _cancelButton})
     {
         btn->setMouseTracking(true);
         btn->setFocusPolicy(Qt::NoFocus);
+        btn->setIconSize(QSize(14, 14));
     }
+
+    connect(_saveButton, &QPushButton::clicked, this, &CaptureOverlay::saveSelection);
+    connect(_copyButton, &QPushButton::clicked, this, &CaptureOverlay::copyToClipboard);
+    connect(_cancelButton, &QPushButton::clicked, this, &CaptureOverlay::cleanClose);
 
     QHBoxLayout* actionsLayout = new QHBoxLayout(_actionsBox);
     actionsLayout->addWidget(_saveButton);
@@ -72,21 +78,22 @@ CaptureOverlay::CaptureOverlay(QWidget* parent)
 
     _actionsBox->setStyleSheet(R"(
         QWidget {
-            background: rgba(0,0,0,160);
+            background: rgba(0, 0, 0, 160);
             border-radius: 4px;
-            padding: 0px;
+            padding: 2px;
         }
         QPushButton {
-            font-size: 11px;
             background: transparent;
+            width: 14px;
+            height: 14px;
             border-style: solid;
             border-width: 1px;
             border-radius: 2px;
-            border-color: rgba(0,0,0,0);
+            border-color: rgba(0, 0, 0, 0);
             padding: 0px;
         }
         QPushButton:hover {
-            border-color: rgba(255,255,255,255);
+            border-color: rgba(255, 255, 255, 255);
         }
     )");
     _actionsBox->setMouseTracking(true);
