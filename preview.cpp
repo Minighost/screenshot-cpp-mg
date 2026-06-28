@@ -36,6 +36,8 @@ PreviewWindow::PreviewWindow()
     _view->setDragMode(QGraphicsView::ScrollHandDrag);
     _view->setFrameShape(QFrame::NoFrame);
     _view->setFocusPolicy(Qt::NoFocus);
+    _view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    _view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     // Spacer for some extra padding on the left side
     QWidget* spacer = new QWidget(this);
@@ -44,15 +46,18 @@ PreviewWindow::PreviewWindow()
 
     QAction* saveAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_DialogSaveButton), "");
     QAction* copyAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_FileIcon), "");
-    QAction* resetAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), "");
+    QAction* resetZoomAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), "");
+    QAction* resetWindowAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_TitleBarMaxButton), "");
 
     saveAction->setToolTip("Save (Ctrl+S)");
     copyAction->setToolTip("Copy (Ctrl+C)");
-    resetAction->setToolTip("Reset zoom (R)");
+    resetZoomAction->setToolTip("Reset zoom (R)");
+    resetWindowAction->setToolTip("Reset window (Shift+R)");
 
     connect(saveAction, &QAction::triggered, this, &PreviewWindow::_save);
     connect(copyAction, &QAction::triggered, this, &PreviewWindow::_copy);
-    connect(resetAction, &QAction::triggered, this, &PreviewWindow::_resetView);
+    connect(resetZoomAction, &QAction::triggered, this, &PreviewWindow::_resetView);
+    connect(resetWindowAction, &QAction::triggered, this, &PreviewWindow::_resetSize);
 
     _toolbar->addWidget(_zoomLabel);
     _toolbar->setIconSize(QSize(16, 16));
@@ -76,16 +81,18 @@ void PreviewWindow::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_S && event->modifiers() == Qt::ControlModifier) { _save(); }
     else if (event->key() == Qt::Key_C && event->modifiers() == Qt::ControlModifier) { _copy(); }
-    else if (event->key() == Qt::Key_R) { _resetView(); }
+    else if (event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier) { _resetView(); }
+    else if (event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier) { _resetSize(); }
 }
 
 void PreviewWindow::setPixmap(const QPixmap& pixmap)
 {
     _pixmapItem->setPixmap(pixmap);
-    _scene->setSceneRect(_pixmapItem->boundingRect());
+    QRectF padded = _pixmapItem->boundingRect().adjusted(-1000, -1000, 1000, 1000);
+    _scene->setSceneRect(padded);
     _view->resetTransform();
-    _view->setBaseSize(pixmap.width(), pixmap.height());
-    adjustSize();
+    _view->centerOn(_pixmapItem);
+    resize(pixmap.width(), pixmap.height());
 }
 
 void PreviewWindow::_save() { savePixmap(_pixmapItem->pixmap(), this); }
@@ -97,6 +104,12 @@ void PreviewWindow::_resetView()
     _view->resetTransform();
     _view->centerOn(_pixmapItem);
     _updateZoomLabel(1);
+}
+
+void PreviewWindow::_resetSize()
+{
+    const QPixmap& pixmap = _pixmapItem->pixmap();
+    resize(pixmap.width(), pixmap.height());
 }
 
 void PreviewWindow::_updateZoomLabel(qreal scale) { _zoomLabel->setText(QString("%1%").arg(qRound(scale * 100))); }

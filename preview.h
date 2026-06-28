@@ -42,5 +42,6 @@ class PreviewWindow : public QWidget
     void _save();
     void _copy();
     void _resetView();
+    void _resetSize();
     void _updateZoomLabel(qreal scale);
 };
