@@ -42,6 +42,13 @@ target_link_libraries(ScreenshotTool PRIVATE
 )
 add_custom_command(TARGET ScreenshotTool POST_BUILD
     COMMAND "C:/Qt/6.11.1/msvc2022_64/bin/windeployqt.exe"
+        --no-translations
         $<TARGET_FILE:ScreenshotTool>
-    COMMENT "Running windeployqt..."
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        $<TARGET_FILE_DIR:ScreenshotTool>/networkinformation
+    COMMAND ${CMAKE_COMMAND} -E remove_directory
+        $<TARGET_FILE_DIR:ScreenshotTool>/tls
+    COMMAND ${CMAKE_COMMAND} -E remove
+        $<TARGET_FILE_DIR:ScreenshotTool>/Qt6Network.dll
+    COMMENT "Running windeployqt and cleaning up..."
 )
