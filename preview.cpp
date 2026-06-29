@@ -330,6 +330,22 @@ PreviewWindow::PreviewWindow()
     addTool(tintedIcon(":/svgs/line.svg"), "Line", PreviewTool::Line);
     addTool(tintedIcon(":/svgs/arrow.svg"), "Arrow", PreviewTool::Arrow);
 
+    // Add delete button to the end
+    QAction* deleteAction = _toolbar->addAction(tintedIcon(":/svgs/delete.svg"), "");
+    deleteAction->setToolTip("Delete all items");
+    connect(
+        deleteAction, &QAction::triggered, this,
+        [this]()
+        {
+            QList<QGraphicsItem*> items = _scene->items();
+            for (QGraphicsItem* item : items)
+            {
+                if (item != _pixmapItem) _scene->removeItem(item);
+            }
+            _undoStack->clear();
+        }
+    );
+
     _toolbar->setIconSize(QSize(16, 16));
     _toolbar->setStyleSheet(
         "QToolBar { padding: 4px; spacing: 4px; background: rgb(25, 35, 46) }"

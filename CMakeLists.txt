@@ -24,6 +24,7 @@ qt_add_resources(ScreenshotTool "resources"
         svgs/arrow.svg
         svgs/cancel.svg
         svgs/copy.svg
+        svgs/delete.svg
         svgs/draw.svg
         svgs/elli-fill.svg
         svgs/elli-outline.svg
