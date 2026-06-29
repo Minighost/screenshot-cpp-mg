@@ -7,6 +7,7 @@
 #include <QToolBar>
 #include <QLabel>
 #include <QUndoStack>
+#include <QColor>
 
 enum class PreviewTool
 {
@@ -30,6 +31,8 @@ class PreviewView : public QGraphicsView
         QUndoStack* undoStack = nullptr
     );
     void setTool(PreviewTool tool);
+    QColor getDrawColor();
+    void setDrawColor(QColor color);
 
    protected:
     // overrides
@@ -52,6 +55,7 @@ class PreviewView : public QGraphicsView
     std::function<void(qreal)> _onZoom;
     QUndoStack* _undoStack;
     PreviewTool _tool;
+    QColor _drawColor;
     // Free Draw
     QGraphicsPathItem* _currentStroke;
     QPainterPath _currentPath;

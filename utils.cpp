@@ -32,3 +32,10 @@ QIcon tintedIcon(const QString& path, const QColor& color)
     painter.fillRect(pixmap.rect(), color);
     return QIcon(pixmap);
 }
+
+QIcon colorSwatchIcon(const QColor& color, int size)
+{
+    QPixmap px(size, size);
+    px.fill(color);
+    return QIcon(px);
+}

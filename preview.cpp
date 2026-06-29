@@ -10,6 +10,7 @@
 #include <QGraphicsEllipseItem>
 #include <QGraphicsLineItem>
 #include <QActionGroup>
+#include <QColorDialog>
 
 // ---
 // Preview View
@@ -22,6 +23,7 @@ PreviewView::PreviewView(
       _onZoom(onZoom),
       _undoStack(undoStack),
       _tool(PreviewTool::Pan),
+      _drawColor(Qt::red),
       _currentItem(nullptr),
       _shapeStart(),
       _shapeEnd()
@@ -33,6 +35,10 @@ void PreviewView::setTool(PreviewTool tool)
     _tool = tool;
     setDragMode(tool == PreviewTool::Pan ? QGraphicsView::ScrollHandDrag : QGraphicsView::NoDrag);
 }
+
+QColor PreviewView::getDrawColor() { return _drawColor; }
+
+void PreviewView::setDrawColor(QColor color) { _drawColor = color; }
 
 void PreviewView::wheelEvent(QWheelEvent* event)
 {
@@ -92,7 +98,7 @@ void PreviewView::_beginStroke(const QPoint& pos)
     _currentPath = QPainterPath();
     _currentPath.moveTo(mapToScene(pos));
     _currentStroke = new QGraphicsPathItem();
-    _currentStroke->setPen(QPen(Qt::red, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    _currentStroke->setPen(QPen(_drawColor, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     _currentStroke->setPath(_currentPath);
     scene()->addItem(_currentStroke);
 }
@@ -136,8 +142,8 @@ void PreviewView::_commitShape()
 
 QGraphicsItem* PreviewView::_createShapeItem(const QRectF& rect)
 {
-    QPen pen(Qt::red, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    QBrush fillBrush(Qt::red);
+    QPen pen(_drawColor, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    QBrush fillBrush(_drawColor);
     QBrush noFill(Qt::NoBrush);
 
     switch (_tool)
@@ -243,6 +249,22 @@ PreviewWindow::PreviewWindow()
 
     _toolbar->addWidget(_zoomLabel);
     _toolbar->addSeparator();
+
+    // Add a color picker (not part of the action group)
+    QAction* colorSelect = _toolbar->addAction(colorSwatchIcon(Qt::red), "");
+    colorSelect->setToolTip("Select a drawing color");
+    connect(
+        colorSelect, &QAction::triggered, this,
+        [this, colorSelect]()
+        {
+            QColor color = QColorDialog::getColor(_view->getDrawColor(), this, "Pick Color");
+            if (color.isValid())
+            {
+                _view->setDrawColor(color);
+                colorSelect->setIcon(colorSwatchIcon(color));
+            }
+        }
+    );
 
     // Drawing stuff
     QActionGroup* toolGroup = new QActionGroup(this);
