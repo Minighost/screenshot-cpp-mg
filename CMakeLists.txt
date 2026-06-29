@@ -6,7 +6,7 @@ set(CMAKE_PREFIX_PATH "C:/Qt/6.11.1/msvc2022_64")
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
-qt_add_executable(ScreenshotTool
+qt_add_executable(ScreenshotTool WIN32
     main.cpp
     overlay.cpp
     overlay.h
