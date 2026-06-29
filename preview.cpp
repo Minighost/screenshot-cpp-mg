@@ -4,14 +4,12 @@
 #include <QCloseEvent>
 #include <QWheelEvent>
 #include <QVBoxLayout>
-#include <QStyle>
 #include <QPen>
 #include <QGraphicsRectItem>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsLineItem>
 #include <QActionGroup>
 #include <QColorDialog>
-#include <cmath>
 #include <QtMath>
 
 // ---

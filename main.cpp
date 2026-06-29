@@ -2,7 +2,7 @@
 #include <QThread>
 #include <QSystemTrayIcon>
 #include <QMenu>
-#include <QDebug>
+// #include <QDebug>
 #include <windows.h>
 #include <future>
 #include "communicator.h"

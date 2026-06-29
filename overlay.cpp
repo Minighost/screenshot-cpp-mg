@@ -4,8 +4,6 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QCursor>
-#include <QDateTime>
-#include <QFileDialog>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -14,8 +12,6 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QScreen>
-#include <QStandardPaths>
-#include <QStyle>
 
 static const int HANDLE_DRAW_SIZE = 2;
 static const int HANDLE_HIT_SIZE = 5;
