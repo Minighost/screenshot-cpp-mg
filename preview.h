@@ -40,6 +40,8 @@ class PreviewView : public QGraphicsView
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+
+   private:
     // markup
     void _beginStroke(const QPoint& pos);
     void _updateStroke(const QPoint& pos);
@@ -48,10 +50,11 @@ class PreviewView : public QGraphicsView
     void _updateShape(const QPoint& pos);
     void _commitShape();
     // markup helpers
+    QGraphicsItem* _makeArrowItem(const QPointF& from, const QPointF& to, const QPen& pen);
+    static QPainterPath _computeArrowPath(const QPointF& from, const QPointF& to);
     QGraphicsItem* _createShapeItem(const QRectF& rect);
     void _applyShapeGeometry(QGraphicsItem* item, const QRectF& rect);
 
-   private:
     std::function<void(qreal)> _onZoom;
     QUndoStack* _undoStack;
     PreviewTool _tool;

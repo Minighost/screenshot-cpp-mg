@@ -11,6 +11,8 @@
 #include <QGraphicsLineItem>
 #include <QActionGroup>
 #include <QColorDialog>
+#include <cmath>
+#include <QtMath>
 
 // ---
 // Preview View
@@ -120,6 +122,7 @@ void PreviewView::_commitStroke()
 void PreviewView::_beginShape(const QPoint& pos)
 {
     _shapeStart = mapToScene(pos);
+    _shapeEnd = _shapeStart;
     _currentItem = _createShapeItem(QRectF(_shapeStart, _shapeStart));
     if (_currentItem) scene()->addItem(_currentItem);
 }
@@ -138,6 +141,37 @@ void PreviewView::_commitShape()
     if (!_currentItem) return;
     _undoStack->push(new AddItemCommand(scene(), _currentItem));
     _currentItem = nullptr;
+}
+
+QGraphicsItem* PreviewView::_makeArrowItem(const QPointF& from, const QPointF& to, const QPen& pen)
+{
+    auto* item = new QGraphicsPathItem(_computeArrowPath(from, to));
+    item->setPen(pen);
+    item->setBrush(pen.color());
+    return item;
+}
+
+QPainterPath PreviewView::_computeArrowPath(const QPointF& from, const QPointF& to)
+{
+    QPainterPath path;
+    path.moveTo(from);
+    path.lineTo(to);
+
+    QLineF line(from, to);
+    if (line.length() < 1.0) return path;  // avoid degenerate arrow
+
+    double angle = qDegreesToRadians(line.angle());
+    double arrowSize = 12.0;
+
+    QPointF p1 = to + QPointF(cos(angle + M_PI - M_PI / 6) * arrowSize, -sin(angle + M_PI - M_PI / 6) * arrowSize);
+    QPointF p2 = to + QPointF(cos(angle + M_PI + M_PI / 6) * arrowSize, -sin(angle + M_PI + M_PI / 6) * arrowSize);
+
+    path.moveTo(to);
+    path.lineTo(p1);
+    path.lineTo(p2);
+    path.closeSubpath();
+
+    return path;
 }
 
 QGraphicsItem* PreviewView::_createShapeItem(const QRectF& rect)
@@ -177,10 +211,14 @@ QGraphicsItem* PreviewView::_createShapeItem(const QRectF& rect)
             return item;
         }
         case PreviewTool::Line:
-        case PreviewTool::Arrow:
         {
             auto* item = new QGraphicsLineItem(QLineF(_shapeStart, _shapeStart));
             item->setPen(pen);
+            return item;
+        }
+        case PreviewTool::Arrow:
+        {
+            auto* item = _makeArrowItem(_shapeStart, _shapeEnd, pen);
             return item;
         }
         default: return nullptr;
@@ -195,8 +233,10 @@ void PreviewView::_applyShapeGeometry(QGraphicsItem* item, const QRectF& rect)
         case PreviewTool::FilledRectangle: static_cast<QGraphicsRectItem*>(item)->setRect(rect); break;
         case PreviewTool::Ellipse:
         case PreviewTool::FilledEllipse: static_cast<QGraphicsEllipseItem*>(item)->setRect(rect); break;
-        case PreviewTool::Line:
-        case PreviewTool::Arrow: static_cast<QGraphicsLineItem*>(item)->setLine(QLineF(_shapeStart, _shapeEnd)); break;
+        case PreviewTool::Line: static_cast<QGraphicsLineItem*>(item)->setLine(QLineF(_shapeStart, _shapeEnd)); break;
+        case PreviewTool::Arrow:
+            static_cast<QGraphicsPathItem*>(item)->setPath(_computeArrowPath(_shapeStart, _shapeEnd));
+            break;
         default: break;
     }
 }
