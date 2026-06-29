@@ -380,7 +380,7 @@ void PreviewWindow::setPixmap(const QPixmap& pixmap)
     _scene->setSceneRect(padded);
     _view->resetTransform();
     _view->centerOn(_pixmapItem);
-    resize(pixmap.width(), pixmap.height());
+    resize(qMax(pixmap.width(), 200), pixmap.height());
 }
 
 void PreviewWindow::_save() { savePixmap(_renderScene(), this); }
