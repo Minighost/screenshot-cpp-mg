@@ -1,13 +1,13 @@
 #pragma once
 #include <QUndoCommand>
 #include <QGraphicsScene>
-#include <QGraphicsPathItem>
+#include <QGraphicsItem>
 
-class StrokeCommand : public QUndoCommand
+class AddItemCommand : public QUndoCommand
 {
    public:
-    StrokeCommand(QGraphicsScene* scene, QGraphicsPathItem* item) : _scene(scene), _item(item) {}
-    ~StrokeCommand()
+    AddItemCommand(QGraphicsScene* scene, QGraphicsItem* item) : _scene(scene), _item(item) {}
+    ~AddItemCommand()
     {
         if (!_scene->items().contains(_item)) delete _item;
     }
@@ -16,10 +16,10 @@ class StrokeCommand : public QUndoCommand
 
     void redo() override
     {
-        if (_item->scene() != _scene) _scene->addItem(_item);
+        if (!_scene->items().contains(_item)) _scene->addItem(_item);
     }
 
    private:
     QGraphicsScene* _scene;
-    QGraphicsPathItem* _item;
+    QGraphicsItem* _item;
 };

@@ -4,6 +4,8 @@
 #include <QDateTime>
 #include <QGuiApplication>
 #include <QClipboard>
+#include <QSvgRenderer>
+#include <QPainter>
 
 void savePixmap(const QPixmap& pixmap, QWidget* parent)
 {
@@ -18,3 +20,15 @@ void savePixmap(const QPixmap& pixmap, QWidget* parent)
 }
 
 void copyPixmap(const QPixmap& pixmap) { QGuiApplication::clipboard()->setPixmap(pixmap); }
+
+QIcon tintedIcon(const QString& path, const QColor& color)
+{
+    QSvgRenderer renderer(path);
+    QPixmap pixmap(24, 24);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    renderer.render(&painter);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    painter.fillRect(pixmap.rect(), color);
+    return QIcon(pixmap);
+}

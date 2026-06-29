@@ -6,6 +6,14 @@
 #include <QVBoxLayout>
 #include <QStyle>
 #include <QPen>
+#include <QGraphicsRectItem>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QActionGroup>
+
+// ---
+// Preview View
+// ---
 
 PreviewView::PreviewView(
     QGraphicsScene* scene, QWidget* parent, std::function<void(qreal)> onZoom, QUndoStack* undoStack
@@ -14,7 +22,9 @@ PreviewView::PreviewView(
       _onZoom(onZoom),
       _undoStack(undoStack),
       _tool(PreviewTool::Pan),
-      _currentStroke(nullptr)
+      _currentItem(nullptr),
+      _shapeStart(),
+      _shapeEnd()
 {
 }
 
@@ -43,38 +53,151 @@ void PreviewView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
-    _currentPath = QPainterPath();
-    _currentPath.moveTo(mapToScene(event->pos()));
+    if (_tool == PreviewTool::FreeDraw)
+        _beginStroke(event->pos());
+    else
+        _beginShape(event->pos());
+}
 
+void PreviewView::mouseMoveEvent(QMouseEvent* event)
+{
+    if (_tool == PreviewTool::Pan || !_currentItem && !_currentStroke)
+    {
+        QGraphicsView::mouseMoveEvent(event);
+        return;
+    }
+
+    if (_tool == PreviewTool::FreeDraw)
+        _updateStroke(event->pos());
+    else
+        _updateShape(event->pos());
+}
+
+void PreviewView::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (_tool == PreviewTool::Pan || event->button() != Qt::LeftButton)
+    {
+        QGraphicsView::mouseReleaseEvent(event);
+        return;
+    }
+
+    if (_tool == PreviewTool::FreeDraw)
+        _commitStroke();
+    else
+        _commitShape();
+}
+
+void PreviewView::_beginStroke(const QPoint& pos)
+{
+    _currentPath = QPainterPath();
+    _currentPath.moveTo(mapToScene(pos));
     _currentStroke = new QGraphicsPathItem();
     _currentStroke->setPen(QPen(Qt::red, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     _currentStroke->setPath(_currentPath);
     scene()->addItem(_currentStroke);
 }
 
-void PreviewView::mouseMoveEvent(QMouseEvent* event)
+void PreviewView::_updateStroke(const QPoint& pos)
 {
-    if (_tool == PreviewTool::Pan || !_currentStroke)
-    {
-        QGraphicsView::mouseMoveEvent(event);
-        return;
-    }
-
-    _currentPath.lineTo(mapToScene(event->pos()));
+    if (!_currentStroke) return;
+    _currentPath.lineTo(mapToScene(pos));
     _currentStroke->setPath(_currentPath);
 }
 
-void PreviewView::mouseReleaseEvent(QMouseEvent* event)
+void PreviewView::_commitStroke()
 {
-    if (_tool == PreviewTool::Pan || !_currentStroke)
-    {
-        QGraphicsView::mouseReleaseEvent(event);
-        return;
-    }
-
-    _undoStack->push(new StrokeCommand(scene(), _currentStroke));
+    if (!_currentStroke) return;
+    _undoStack->push(new AddItemCommand(scene(), _currentStroke));
     _currentStroke = nullptr;
 }
+
+void PreviewView::_beginShape(const QPoint& pos)
+{
+    _shapeStart = mapToScene(pos);
+    _currentItem = _createShapeItem(QRectF(_shapeStart, _shapeStart));
+    if (_currentItem) scene()->addItem(_currentItem);
+}
+
+void PreviewView::_updateShape(const QPoint& pos)
+{
+    if (!_currentItem) return;
+    _shapeEnd = mapToScene(pos);
+    QRectF rect = QRectF(_shapeStart, _shapeEnd).normalized();
+    _applyShapeGeometry(_currentItem, rect);
+    scene()->update();
+}
+
+void PreviewView::_commitShape()
+{
+    if (!_currentItem) return;
+    _undoStack->push(new AddItemCommand(scene(), _currentItem));
+    _currentItem = nullptr;
+}
+
+QGraphicsItem* PreviewView::_createShapeItem(const QRectF& rect)
+{
+    QPen pen(Qt::red, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    QBrush fillBrush(Qt::red);
+    QBrush noFill(Qt::NoBrush);
+
+    switch (_tool)
+    {
+        case PreviewTool::Rectangle:
+        {
+            auto* item = new QGraphicsRectItem(rect);
+            item->setPen(pen);
+            item->setBrush(noFill);
+            return item;
+        }
+        case PreviewTool::FilledRectangle:
+        {
+            auto* item = new QGraphicsRectItem(rect);
+            item->setPen(pen);
+            item->setBrush(fillBrush);
+            return item;
+        }
+        case PreviewTool::Ellipse:
+        {
+            auto* item = new QGraphicsEllipseItem(rect);
+            item->setPen(pen);
+            item->setBrush(noFill);
+            return item;
+        }
+        case PreviewTool::FilledEllipse:
+        {
+            auto* item = new QGraphicsEllipseItem(rect);
+            item->setPen(pen);
+            item->setBrush(fillBrush);
+            return item;
+        }
+        case PreviewTool::Line:
+        case PreviewTool::Arrow:
+        {
+            auto* item = new QGraphicsLineItem(QLineF(_shapeStart, _shapeStart));
+            item->setPen(pen);
+            return item;
+        }
+        default: return nullptr;
+    }
+}
+
+void PreviewView::_applyShapeGeometry(QGraphicsItem* item, const QRectF& rect)
+{
+    switch (_tool)
+    {
+        case PreviewTool::Rectangle:
+        case PreviewTool::FilledRectangle: static_cast<QGraphicsRectItem*>(item)->setRect(rect); break;
+        case PreviewTool::Ellipse:
+        case PreviewTool::FilledEllipse: static_cast<QGraphicsEllipseItem*>(item)->setRect(rect); break;
+        case PreviewTool::Line:
+        case PreviewTool::Arrow: static_cast<QGraphicsLineItem*>(item)->setLine(QLineF(_shapeStart, _shapeEnd)); break;
+        default: break;
+    }
+}
+
+// ---
+// Preview Window
+// ---
 
 PreviewWindow::PreviewWindow()
     : QWidget(),
@@ -85,8 +208,7 @@ PreviewWindow::PreviewWindow()
           _scene, this, [this](qreal scale) { _updateZoomLabel(scale); }, _undoStack
       )),
       _toolbar(new QToolBar(this)),
-      _zoomLabel(new QLabel("100%", this)),
-      _drawAction(nullptr)
+      _zoomLabel(new QLabel("100%", this))
 {
     setWindowTitle("Preview");
     setWindowIcon(QIcon(":/screenshot-mg.ico"));
@@ -104,10 +226,10 @@ PreviewWindow::PreviewWindow()
     spacer->setFixedWidth(2);
     _toolbar->addWidget(spacer);
 
-    QAction* saveAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_DialogSaveButton), "");
-    QAction* copyAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_FileIcon), "");
-    QAction* resetZoomAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), "");
-    QAction* resetWindowAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_TitleBarMaxButton), "");
+    QAction* saveAction = _toolbar->addAction(tintedIcon(":/svgs/save.svg"), "");
+    QAction* copyAction = _toolbar->addAction(tintedIcon(":/svgs/copy.svg"), "");
+    QAction* resetZoomAction = _toolbar->addAction(tintedIcon(":/svgs/reset-zoom-level.svg"), "");
+    QAction* resetWindowAction = _toolbar->addAction(tintedIcon(":/svgs/reset-window-size.svg"), "");
 
     saveAction->setToolTip("Save (Ctrl+S)");
     copyAction->setToolTip("Copy (Ctrl+C)");
@@ -120,15 +242,31 @@ PreviewWindow::PreviewWindow()
     connect(resetWindowAction, &QAction::triggered, this, &PreviewWindow::_resetSize);
 
     _toolbar->addWidget(_zoomLabel);
+    _toolbar->addSeparator();
 
     // Drawing stuff
-    _drawAction = _toolbar->addAction(style()->standardIcon(QStyle::SP_FileDialogContentsView), "");
-    _drawAction->setToolTip("Draw (D)");
-    _drawAction->setCheckable(true);
-    connect(
-        _drawAction, &QAction::toggled, this,
-        [this](bool checked) { _view->setTool(checked ? PreviewTool::FreeDraw : PreviewTool::Pan); }
-    );
+    QActionGroup* toolGroup = new QActionGroup(this);
+    toolGroup->setExclusive(true);
+
+    auto addTool = [&](const QIcon& icon, const QString& tooltip, PreviewTool tool, bool checked = false)
+    {
+        QAction* action = _toolbar->addAction(icon, "");
+        action->setCheckable(true);
+        action->setChecked(checked);
+        action->setToolTip(tooltip);
+        toolGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, tool]() { _view->setTool(tool); });
+        return action;
+    };
+
+    addTool(tintedIcon(":/svgs/pan.svg"), "Pan", PreviewTool::Pan, true);
+    addTool(tintedIcon(":/svgs/draw.svg"), "Free Draw", PreviewTool::FreeDraw);
+    addTool(tintedIcon(":/svgs/rect-outline.svg"), "Rectangle", PreviewTool::Rectangle);
+    addTool(tintedIcon(":/svgs/rect-fill.svg"), "Filled Rectangle", PreviewTool::FilledRectangle);
+    addTool(tintedIcon(":/svgs/elli-outline.svg"), "Ellipse", PreviewTool::Ellipse);
+    addTool(tintedIcon(":/svgs/elli-fill.svg"), "Filled Ellipse", PreviewTool::FilledEllipse);
+    addTool(tintedIcon(":/svgs/line.svg"), "Line", PreviewTool::Line);
+    addTool(tintedIcon(":/svgs/arrow.svg"), "Arrow", PreviewTool::Arrow);
 
     _toolbar->setIconSize(QSize(16, 16));
     _toolbar->setStyleSheet(
@@ -155,7 +293,6 @@ void PreviewWindow::keyPressEvent(QKeyEvent* event)
     else if (event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier) { _resetSize(); }
     else if (event->key() == Qt::Key_Z && event->modifiers() == Qt::ControlModifier) { _undoStack->undo(); }
     else if (event->key() == Qt::Key_Y && event->modifiers() == Qt::ControlModifier) { _undoStack->redo(); }
-    else if (event->key() == Qt::Key_D && event->modifiers() == Qt::NoModifier) { _drawAction->toggle(); }
 }
 
 void PreviewWindow::setPixmap(const QPixmap& pixmap)

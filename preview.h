@@ -12,6 +12,12 @@ enum class PreviewTool
 {
     Pan,
     FreeDraw,
+    Rectangle,
+    FilledRectangle,
+    Ellipse,
+    FilledEllipse,
+    Line,
+    Arrow,
 };
 
 class PreviewView : public QGraphicsView
@@ -26,17 +32,33 @@ class PreviewView : public QGraphicsView
     void setTool(PreviewTool tool);
 
    protected:
+    // overrides
     void wheelEvent(QWheelEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    // markup
+    void _beginStroke(const QPoint& pos);
+    void _updateStroke(const QPoint& pos);
+    void _commitStroke();
+    void _beginShape(const QPoint& pos);
+    void _updateShape(const QPoint& pos);
+    void _commitShape();
+    // markup helpers
+    QGraphicsItem* _createShapeItem(const QRectF& rect);
+    void _applyShapeGeometry(QGraphicsItem* item, const QRectF& rect);
 
    private:
     std::function<void(qreal)> _onZoom;
     QUndoStack* _undoStack;
     PreviewTool _tool;
+    // Free Draw
     QGraphicsPathItem* _currentStroke;
     QPainterPath _currentPath;
+    // Shapes
+    QGraphicsItem* _currentItem;
+    QPointF _shapeStart;
+    QPointF _shapeEnd;
 };
 
 class PreviewWindow : public QWidget
@@ -58,7 +80,6 @@ class PreviewWindow : public QWidget
     PreviewView* _view;
     QToolBar* _toolbar;
     QLabel* _zoomLabel;
-    QAction* _drawAction;
 
     void _save();
     void _copy();
