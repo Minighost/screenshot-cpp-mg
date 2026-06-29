@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
-project(ScreenshotTool)
+project(screenshot-cpp-mg)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_PREFIX_PATH "C:/Qt/6.11.1/msvc2022_64")
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
-qt_add_executable(ScreenshotTool WIN32
+qt_add_executable(screenshot-cpp-mg WIN32
     main.cpp
     overlay.cpp
     overlay.h
@@ -18,7 +18,7 @@ qt_add_executable(ScreenshotTool WIN32
     drawcommands.h
     app.rc
 )
-qt_add_resources(ScreenshotTool "resources"
+qt_add_resources(screenshot-cpp-mg "resources"
     PREFIX "/"
     FILES
         screenshot-mg.ico
@@ -37,19 +37,19 @@ qt_add_resources(ScreenshotTool "resources"
         svgs/reset-zoom-level.svg
         svgs/save.svg
 )
-target_link_libraries(ScreenshotTool PRIVATE
+target_link_libraries(screenshot-cpp-mg PRIVATE
     Qt6::Widgets
     Qt6::Svg
 )
-add_custom_command(TARGET ScreenshotTool POST_BUILD
+add_custom_command(TARGET screenshot-cpp-mg POST_BUILD
     COMMAND "C:/Qt/6.11.1/msvc2022_64/bin/windeployqt.exe"
         --no-translations
-        $<TARGET_FILE:ScreenshotTool>
+        $<TARGET_FILE:screenshot-cpp-mg>
     COMMAND ${CMAKE_COMMAND} -E remove_directory
-        $<TARGET_FILE_DIR:ScreenshotTool>/networkinformation
+        $<TARGET_FILE_DIR:screenshot-cpp-mg>/networkinformation
     COMMAND ${CMAKE_COMMAND} -E remove_directory
-        $<TARGET_FILE_DIR:ScreenshotTool>/tls
+        $<TARGET_FILE_DIR:screenshot-cpp-mg>/tls
     COMMAND ${CMAKE_COMMAND} -E remove
-        $<TARGET_FILE_DIR:ScreenshotTool>/Qt6Network.dll
+        $<TARGET_FILE_DIR:screenshot-cpp-mg>/Qt6Network.dll
     COMMENT "Running windeployqt and cleaning up..."
 )
