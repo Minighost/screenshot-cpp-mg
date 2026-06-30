@@ -107,9 +107,7 @@ void CaptureOverlay::show()
     _label->hide();
     _actionsBox->hide();
 
-    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
-    if (!screen) screen = QGuiApplication::primaryScreen();
-
+    QScreen* screen = QGuiApplication::primaryScreen();
     _dpr = screen->devicePixelRatio();
 
     QRect virtualGeo = screen->virtualGeometry();
