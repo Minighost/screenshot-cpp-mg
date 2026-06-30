@@ -26,10 +26,7 @@ class PreviewView : public QGraphicsView
     Q_OBJECT
 
    public:
-    explicit PreviewView(
-        QGraphicsScene* scene, QWidget* parent = nullptr, std::function<void(qreal)> onZoom = nullptr,
-        QUndoStack* undoStack = nullptr
-    );
+    explicit PreviewView(QGraphicsScene* scene, QWidget* parent = nullptr, QUndoStack* undoStack = nullptr);
     void setTool(PreviewTool tool);
     QColor getDrawColor();
     void setDrawColor(QColor color);
@@ -86,12 +83,10 @@ class PreviewWindow : public QWidget
     QUndoStack* _undoStack;
     PreviewView* _view;
     QToolBar* _toolbar;
-    QLabel* _zoomLabel;
 
     void _save();
     void _copy();
     void _resetView();
     void _resetSize();
-    void _updateZoomLabel(qreal scale);
     QPixmap _renderScene();
 };

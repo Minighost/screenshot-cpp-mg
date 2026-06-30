@@ -16,11 +16,8 @@
 // Preview View
 // ---
 
-PreviewView::PreviewView(
-    QGraphicsScene* scene, QWidget* parent, std::function<void(qreal)> onZoom, QUndoStack* undoStack
-)
+PreviewView::PreviewView(QGraphicsScene* scene, QWidget* parent, QUndoStack* undoStack)
     : QGraphicsView(scene, parent),
-      _onZoom(onZoom),
       _undoStack(undoStack),
       _tool(PreviewTool::Pan),
       _drawColor(Qt::red),
@@ -44,11 +41,7 @@ void PreviewView::wheelEvent(QWheelEvent* event)
 {
     qreal factor = event->angleDelta().y() > 0 ? 1.15 : 1.0 / 1.15;
     qreal current_scale = this->transform().m11();
-    if ((factor < 1 && current_scale > 0.1) || (factor > 1 && current_scale < 20))
-    {
-        this->scale(factor, factor);
-        if (_onZoom) _onZoom(transform().m11());
-    }
+    if ((factor < 1 && current_scale > 0.1) || (factor > 1 && current_scale < 20)) { this->scale(factor, factor); }
 }
 
 void PreviewView::mousePressEvent(QMouseEvent* event)
@@ -248,11 +241,8 @@ PreviewWindow::PreviewWindow()
       _scene(new QGraphicsScene(this)),
       _pixmapItem(_scene->addPixmap(QPixmap())),
       _undoStack(new QUndoStack(this)),
-      _view(new PreviewView(
-          _scene, this, [this](qreal scale) { _updateZoomLabel(scale); }, _undoStack
-      )),
-      _toolbar(new QToolBar(this)),
-      _zoomLabel(new QLabel("100%", this))
+      _view(new PreviewView(_scene, this, _undoStack)),
+      _toolbar(new QToolBar(this))
 {
     setWindowTitle("Preview");
     setWindowIcon(QIcon(":/screenshot-mg.ico"));
@@ -285,7 +275,6 @@ PreviewWindow::PreviewWindow()
     connect(resetZoomAction, &QAction::triggered, this, &PreviewWindow::_resetView);
     connect(resetWindowAction, &QAction::triggered, this, &PreviewWindow::_resetSize);
 
-    _toolbar->addWidget(_zoomLabel);
     _toolbar->addSeparator();
 
     // Add a color picker (not part of the action group)
@@ -346,7 +335,7 @@ PreviewWindow::PreviewWindow()
 
     _toolbar->setIconSize(QSize(16, 16));
     _toolbar->setStyleSheet(
-        "QToolBar { padding: 4px; spacing: 4px; background: rgb(25, 35, 46) }"
+        "QToolBar { padding: 4px; spacing: 4px; background: rgb(34, 34, 34) }"
         "QToolButton { width: 24px; height: 24px; background: rgb(46, 46, 46); border-radius: 4px; }"
         "QToolButton:hover { background: rgb(84, 84, 84); }"
         "QToolButton:checked { background: rgb(84, 84, 84); }"
@@ -389,7 +378,6 @@ void PreviewWindow::_resetView()
 {
     _view->resetTransform();
     _view->centerOn(_pixmapItem);
-    _updateZoomLabel(1);
 }
 
 void PreviewWindow::_resetSize()
@@ -403,8 +391,6 @@ void PreviewWindow::closeEvent(QCloseEvent* event)
     _undoStack->clear();
     QWidget::closeEvent(event);
 }
-
-void PreviewWindow::_updateZoomLabel(qreal scale) { _zoomLabel->setText(QString("%1%").arg(qRound(scale * 100))); }
 
 QPixmap PreviewWindow::_renderScene()
 {
