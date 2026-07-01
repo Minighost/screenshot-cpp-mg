@@ -16,6 +16,8 @@ qt_add_executable(screenshot-cpp-mg WIN32
     utils.h
     communicator.h
     drawcommands.h
+    settings.h
+    settings.cpp
     app.rc
 )
 qt_add_resources(screenshot-cpp-mg "resources"
