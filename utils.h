@@ -8,3 +8,5 @@ void savePixmap(const QPixmap& pixmap, QWidget* parent = nullptr);
 void copyPixmap(const QPixmap& pixmap);
 QIcon tintedIcon(const QString& path, const QColor& color = Qt::white);
 QIcon colorSwatchIcon(const QColor& color, int size = 24);
+QString vkToDisplayString(unsigned int vk);
+QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers);

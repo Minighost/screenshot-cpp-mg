@@ -1,27 +1,30 @@
 #include "settings.h"
 #include <QVBoxLayout>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QSettings>
-#include <QMessageBox>
+#include <QCloseEvent>
+#include <QCoreApplication>
+#include <QDebug>
 #include "utils.h"
 
 SettingsWindow::SettingsWindow(QWidget* parent)
-    : QWidget(parent), _hotkeyEdit(new NativeKeyEdit(this)), _saveButton(new QPushButton("Save", this))
+    : QWidget(parent),
+      _hotkeyLabel(new QLabel(this)),
+      _saveButton(new QPushButton("Save", this)),
+      _changeButton(new QPushButton(tintedIcon(":/svgs/draw.svg"), "", this)),
+      _clearButton(new QPushButton(tintedIcon(":/svgs/delete.svg"), "", this))
 {
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
-    _hotkeyEdit->setMaximumSequenceLength(1);
-
-    QPushButton* changeButton = new QPushButton(tintedIcon(":/svgs/draw.svg"), "", this);
-    QPushButton* clearButton = new QPushButton(tintedIcon(":/svgs/delete.svg"), "", this);
 
     QHBoxLayout* hotkeyLayout = new QHBoxLayout();
-    hotkeyLayout->addWidget(_hotkeyEdit);
-    hotkeyLayout->addWidget(changeButton);
-    hotkeyLayout->addWidget(clearButton);
+    hotkeyLayout->addWidget(_hotkeyLabel);
+    hotkeyLayout->addWidget(_changeButton);
+    hotkeyLayout->addWidget(_clearButton);
 
     QFormLayout* form = new QFormLayout();
-    form->addRow("Screenshot Hotkey:", hotkeyLayout);
+    form->addRow("Screenshot:", hotkeyLayout);
 
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addLayout(form);
@@ -29,69 +32,152 @@ SettingsWindow::SettingsWindow(QWidget* parent)
     setLayout(layout);
 
     connect(
-        changeButton, &QPushButton::clicked, this,
-        [this, changeButton]()
+        _changeButton, &QPushButton::clicked, this,
+        [this]()
         {
-            if (_hotkeyEdit->isCapturing())
-            {
-                _hotkeyEdit->setKeySequence(_lastSaved);  // revert display
-                _hotkeyEdit->endCapture();
-                changeButton->setIcon(tintedIcon(":/svgs/draw.svg"));
-            }
+            if (_isCapturing)
+                _endCapture(true);  // revert
             else
-            {
-                _hotkeyEdit->beginCapture();
-                changeButton->setIcon(tintedIcon(":/svgs/cancel.svg"));
-            }
-        }
-    );
-    connect(
-        clearButton, &QPushButton::clicked, this,
-        [this, changeButton]()
-        {
-            _hotkeyEdit->clear();
-            _hotkeyEdit->endCapture();
-            changeButton->setIcon(tintedIcon(":/svgs/draw.svg"));
-            _updateSaveButtonState();
-        }
-    );
-    connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
-    connect(
-        _hotkeyEdit, &QKeySequenceEdit::keySequenceChanged, this,
-        [this, changeButton]()
-        {
-            if (!_hotkeyEdit->isCapturing()) changeButton->setIcon(tintedIcon(":/svgs/draw.svg"));
-            _updateSaveButtonState();
+                _beginCapture();
         }
     );
 
+    connect(
+        _clearButton, &QPushButton::clicked, this,
+        [this]()
+        {
+            _endCapture(false);
+            _setCurrent({});
+        }
+    );
+
+    connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
+
     _loadSettings();
+    _updateSaveButtonState();
+}
+
+void SettingsWindow::_beginCapture()
+{
+    _isCapturing = true;
+    _changeButton->setIcon(tintedIcon(":/svgs/cancel.svg"));
+    _hotkeyLabel->setText("Press a key...");
+    _registerRawInput();
+}
+
+void SettingsWindow::_endCapture(bool revert)
+{
+    _isCapturing = false;
+    _changeButton->setIcon(tintedIcon(":/svgs/draw.svg"));
+    _unregisterRawInput();
+    if (revert) _setCurrent(_current);  // redisplay current without clearing it
+}
+
+void SettingsWindow::_setCurrent(const HotkeyData& data)
+{
+    _current = data;
+    if (data.isEmpty())
+        _hotkeyLabel->setText("(none)");
+    else
+        _hotkeyLabel->setText(hotkeyToDisplayString(data.vk, data.modifiers));
+    _updateSaveButtonState();
+}
+
+void SettingsWindow::_save()
+{
+    if (_current == _lastSaved) return;
+
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+    settings.setValue("hotkey/vk", _current.vk);
+    settings.setValue("hotkey/modifiers", _current.modifiers);
+
+    emit hotkeyChanged(_current.modifiers, _current.vk);
+
+    _lastSaved = _current;
     _updateSaveButtonState();
 }
 
 void SettingsWindow::_loadSettings()
 {
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    QString saved = settings.value("hotkey", "Print Screen").toString();
-    _lastSaved = QKeySequence::fromString(saved);
-    _hotkeyEdit->setKeySequence(_lastSaved);
+    HotkeyData data;
+    data.vk = settings.value("hotkey/vk", VK_SNAPSHOT).toUInt();
+    data.modifiers = settings.value("hotkey/modifiers", MOD_NOREPEAT).toUInt();
+    _lastSaved = data;
+    _setCurrent(data);
 }
 
-void SettingsWindow::_updateSaveButtonState()
+void SettingsWindow::_updateSaveButtonState() { _saveButton->setEnabled(!(_current == _lastSaved)); }
+
+void SettingsWindow::_registerRawInput()
 {
-    bool changed = _hotkeyEdit->hasNewKey() && (_hotkeyEdit->keySequence() != _lastSaved);
-    _saveButton->setEnabled(changed);
+    RAWINPUTDEVICE rid;
+    rid.usUsagePage = 0x01;
+    rid.usUsage = 0x06;
+    rid.dwFlags = RIDEV_INPUTSINK;
+    rid.hwndTarget = (HWND)winId();
+    RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
-void SettingsWindow::_save()
+void SettingsWindow::_unregisterRawInput()
 {
-    if (!_hotkeyEdit->hasNewKey()) return;
+    RAWINPUTDEVICE rid;
+    rid.usUsagePage = 0x01;
+    rid.usUsage = 0x06;
+    rid.dwFlags = RIDEV_REMOVE;
+    rid.hwndTarget = NULL;
+    RegisterRawInputDevices(&rid, 1, sizeof(rid));
+}
 
-    emit hotkeyChanged(_hotkeyEdit->nativeModifiers(), _hotkeyEdit->nativeVk());
+void SettingsWindow::closeEvent(QCloseEvent* event)
+{
+    if (_isCapturing) _unregisterRawInput();
+    QWidget::closeEvent(event);
+}
 
-    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    settings.setValue("hotkey", _hotkeyEdit->keySequence().toString());
+bool SettingsWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+{
+    // Immediately cast void pointer as Windows specific messsage.
+    // There is no way to avoid using a void pointer.
+    // If it ever ISN'T a "MSG*", this will break.
+    MSG* msg = static_cast<MSG*>(message);
+    if (msg->message == WM_INPUT && _isCapturing)
+    {
+        UINT size = 0;
+        GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
+        QByteArray buffer(size, 0);
+        GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, buffer.data(), &size, sizeof(RAWINPUTHEADER));
 
-    _lastSaved = _hotkeyEdit->keySequence();
-    _updateSaveButtonState();  // re-disable, since current == lastSaved now
+        RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buffer.data());
+        if (raw->header.dwType == RIM_TYPEKEYBOARD)
+        {
+            const RAWKEYBOARD& kb = raw->data.keyboard;
+            if (kb.Flags & RI_KEY_BREAK)
+            {
+                qDebug() << "Raw Input VKey:" << kb.VKey << "Flags:" << kb.Flags << "MakeCode:" << kb.MakeCode;
+                switch (kb.VKey)
+                {
+                    case VK_CONTROL:
+                    case VK_SHIFT:
+                    case VK_MENU:
+                    case VK_LWIN:
+                    case VK_RWIN: break;
+                    default:
+                        HotkeyData data;
+                        data.vk = kb.VKey;
+                        data.modifiers = MOD_NOREPEAT;
+                        if (GetKeyState(VK_CONTROL) & 0x8000) data.modifiers |= MOD_CONTROL;
+                        if (GetKeyState(VK_SHIFT) & 0x8000) data.modifiers |= MOD_SHIFT;
+                        if (GetKeyState(VK_MENU) & 0x8000) data.modifiers |= MOD_ALT;
+                        if (GetKeyState(VK_LWIN) & 0x8000) data.modifiers |= MOD_WIN;
+                        if (GetKeyState(VK_RWIN) & 0x8000) data.modifiers |= MOD_WIN;
+                        _endCapture(false);
+                        _setCurrent(data);
+                        break;
+                }
+            }
+        }
+        return false;
+    }
+    return QWidget::nativeEvent(eventType, message, result);
 }

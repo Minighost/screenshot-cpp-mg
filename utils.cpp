@@ -6,6 +6,8 @@
 #include <QClipboard>
 #include <QSvgRenderer>
 #include <QPainter>
+// #include <QDebug>
+#include "windows.h"
 
 void savePixmap(const QPixmap& pixmap, QWidget* parent)
 {
@@ -38,4 +40,45 @@ QIcon colorSwatchIcon(const QColor& color, int size)
     QPixmap px(size, size);
     px.fill(color);
     return QIcon(px);
+}
+
+QString vkToDisplayString(unsigned int vk)
+{
+    // qDebug() << vk << " " << VK_SNAPSHOT;
+
+    // GetKeyNameText returns "Sys Req" for VK_SNAPSHOT, which is wrong
+    if (vk == VK_SNAPSHOT) return "Print Screen";
+
+    // UINT is an unsigned int, this should keep utils.h qt only... I think...
+    // not really sure what the convention is here
+    UINT scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+    switch (vk)
+    {
+        case VK_LEFT:
+        case VK_UP:
+        case VK_RIGHT:
+        case VK_DOWN:
+        case VK_PRIOR:
+        case VK_NEXT:
+        case VK_END:
+        case VK_HOME:
+        case VK_INSERT:
+        case VK_DELETE:
+        case VK_DIVIDE:
+        case VK_NUMLOCK: scanCode |= 0x100; break;
+    }
+    wchar_t buf[64] = {};
+    GetKeyNameTextW(static_cast<LONG>(scanCode << 16), buf, 64);
+    return QString::fromWCharArray(buf);
+}
+
+QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers)
+{
+    QString result;
+    if (modifiers & MOD_CONTROL) result += "Ctrl+";
+    if (modifiers & MOD_ALT) result += "Alt+";
+    if (modifiers & MOD_SHIFT) result += "Shift+";
+    if (modifiers & MOD_WIN) result += "Win+";
+    result += vkToDisplayString(vk);
+    return result;
 }
