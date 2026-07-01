@@ -1,4 +1,4 @@
-# <img src="screenshot-mg.png" width="32" height="32" alt="project icon"> screenshot-cpp-mg
+# <img src="screenshot-mg.png" width="24" height="24" alt="project icon"> screenshot-cpp-mg
 
 Screenshot utility written in C++
 
@@ -16,6 +16,15 @@ Screenshot utility written in C++
 - Mark-up on the Preview
   - Includes panning, free draw, and shape draw
   - Enables Undo (Ctrl+Z) and Redo (Ctrl+Y)
+- Persistent settings
+  - Saved in the program's directory as "settings.ini"
+  - Stores your screenshot keybind (default: Print Screen)
+
+## TODO
+
+- Fullscreen capture
+- Window capture
+- Prettify the settings window
 
 ## Limitations
 
@@ -24,10 +33,7 @@ Screenshot utility written in C++
   - Explicitly uses Window's API
 - Does not account for non-uniform DPR settings
   - If you have different DPR settings (100%, 125%, 150%, etc) for each monitor, it might lead to some wonky results
-  - For best results, put your mouse on the monitor you want to screenshot *before* pressing Print Screen
-- Currently, you cannot change the keybind for this
-  - Or any hotkey
-  - 99% sure I'm going to implement this soon(tm)
+  - Always uses the DPR of your primary monitor
 
 ## Disclaimer
 
