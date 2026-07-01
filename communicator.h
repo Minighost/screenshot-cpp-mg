@@ -10,4 +10,7 @@ class Communicator : public QObject
    signals:
     void showOverlay();
     void quitApp();
+    void hotkeyChanged(quint32 modifiers, quint32 vk);
+    void pauseHotkey();
+    void resumeHotkey();
 };
