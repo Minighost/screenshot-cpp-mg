@@ -12,22 +12,32 @@ SettingsWindow::SettingsWindow(QWidget* parent)
     : QWidget(parent),
       _hotkeyLabel(new QLabel(this)),
       _saveButton(new QPushButton("Save", this)),
-      _changeButton(new QPushButton(tintedIcon(":/svgs/draw.svg"), "", this)),
-      _clearButton(new QPushButton(tintedIcon(":/svgs/delete.svg"), "", this))
+      _changeButton(new QPushButton(tintedIcon(":/svgs/draw.svg", 16), "", this)),
+      _clearButton(new QPushButton(tintedIcon(":/svgs/delete.svg", 16), "", this))
 {
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
 
-    QHBoxLayout* hotkeyLayout = new QHBoxLayout();
-    hotkeyLayout->addWidget(_hotkeyLabel);
-    hotkeyLayout->addWidget(_changeButton);
-    hotkeyLayout->addWidget(_clearButton);
+    _changeButton->setFixedSize(24, 24);
+    _clearButton->setFixedSize(24, 24);
 
-    QFormLayout* form = new QFormLayout();
-    form->addRow("Screenshot:", hotkeyLayout);
+    _changeButton->setIconSize(QSize(12, 12));
+    _clearButton->setIconSize(QSize(12, 12));
 
+    QHBoxLayout* screenshotRegionLayout = new QHBoxLayout();
+    screenshotRegionLayout->setSpacing(1);
+    screenshotRegionLayout->addWidget(new QLabel("Screenshot: ", this));
+    screenshotRegionLayout->addWidget(_hotkeyLabel);
+    screenshotRegionLayout->addStretch();
+    screenshotRegionLayout->addWidget(_changeButton);
+    screenshotRegionLayout->addWidget(_clearButton);
+
+    QLabel* keybind_notice = new QLabel("Keybinds are disabled while this window is open!", this);
+
+    // actual layout
     QVBoxLayout* layout = new QVBoxLayout();
-    layout->addLayout(form);
+    layout->addWidget(keybind_notice);
+    layout->addLayout(screenshotRegionLayout);
     layout->addWidget(_saveButton);
     setLayout(layout);
 
@@ -60,7 +70,7 @@ SettingsWindow::SettingsWindow(QWidget* parent)
 void SettingsWindow::_beginCapture()
 {
     _isCapturing = true;
-    _changeButton->setIcon(tintedIcon(":/svgs/cancel.svg"));
+    _changeButton->setIcon(tintedIcon(":/svgs/cancel.svg", 16));
     _hotkeyLabel->setText("Press a key...");
     _registerRawInput();
 }
@@ -68,7 +78,7 @@ void SettingsWindow::_beginCapture()
 void SettingsWindow::_endCapture(bool revert)
 {
     _isCapturing = false;
-    _changeButton->setIcon(tintedIcon(":/svgs/draw.svg"));
+    _changeButton->setIcon(tintedIcon(":/svgs/draw.svg", 16));
     _unregisterRawInput();
     if (revert) _setCurrent(_current);  // redisplay current without clearing it
 }
