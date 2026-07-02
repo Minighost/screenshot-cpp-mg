@@ -23,10 +23,12 @@ void savePixmap(const QPixmap& pixmap, QWidget* parent)
 
 void copyPixmap(const QPixmap& pixmap) { QGuiApplication::clipboard()->setPixmap(pixmap); }
 
-QIcon tintedIcon(const QString& path, const QColor& color)
+QIcon tintedIcon(const QString& path, const QColor& color, int size)
 {
     QSvgRenderer renderer(path);
-    QPixmap pixmap(24, 24);
+    const qreal dpr = qApp->devicePixelRatio();
+    QPixmap pixmap(size * dpr, size * dpr);
+    pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
     QPainter painter(&pixmap);
     renderer.render(&painter);
@@ -34,6 +36,8 @@ QIcon tintedIcon(const QString& path, const QColor& color)
     painter.fillRect(pixmap.rect(), color);
     return QIcon(pixmap);
 }
+
+QIcon tintedIcon(const QString& path, int size) { return tintedIcon(path, Qt::white, size); }
 
 QIcon colorSwatchIcon(const QColor& color, int size)
 {
