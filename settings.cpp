@@ -17,6 +17,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     // actual layout
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(keybind_notice);
+    layout->addSpacing(5);
 
     for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen, HotkeyId::WindowCapture})
     {
