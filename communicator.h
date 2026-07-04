@@ -13,4 +13,5 @@ class Communicator : public QObject
     void hotkeyChanged(quint32 modifiers, quint32 vk);
     void pauseHotkey();
     void resumeHotkey();
+    void captureFullscreen();
 };

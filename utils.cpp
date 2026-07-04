@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QSvgRenderer>
 #include <QPainter>
+#include <QScreen>
 // #include <QDebug>
 #include "windows.h"
 
@@ -85,4 +86,24 @@ QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers)
     if (modifiers & MOD_WIN) result += "Win+";
     result += vkToDisplayString(vk);
     return result;
+}
+
+QPixmap grabFullscreenAtCursor()
+{
+    // technically a duplication of overlay.cpp
+    // exists here because it's not exactly part of the overlay...
+    // but i'm not entirely sure what the correct solution is
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) screen = QGuiApplication::primaryScreen();
+
+    QScreen* primary = QGuiApplication::primaryScreen();
+    QRect virtualGeo = primary->virtualGeometry();
+    qreal dpr = screen->devicePixelRatio();
+    QRect geo = screen->geometry();
+
+    QPixmap virtualPixmap =
+        primary->grabWindow(0, virtualGeo.x(), virtualGeo.y(), virtualGeo.width(), virtualGeo.height());
+
+    QRect physCrop(int(geo.x() * dpr), int(geo.y() * dpr), int(geo.width() * dpr), int(geo.height() * dpr));
+    return virtualPixmap.copy(physCrop);
 }

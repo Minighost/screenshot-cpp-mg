@@ -6,9 +6,10 @@
 #include <QThread>
 #include <QSystemTrayIcon>
 #include <QMenu>
-// #include <QDebug>
+#include <QDebug>
 #include <windows.h>
 #include <future>
+#include "utils.h"
 #include "communicator.h"
 #include "overlay.h"
 #include "settings.h"
@@ -18,11 +19,18 @@ void hotkeyThread(Communicator* comm)
     HWND hwnd = nullptr;
     UINT modifiers = MOD_NOREPEAT;
     UINT vk = VK_SNAPSHOT;
-    RegisterHotKey(hwnd, 1, modifiers, vk);
+    RegisterHotKey(hwnd, 1, MOD_NOREPEAT, VK_SNAPSHOT);
+    RegisterHotKey(hwnd, 2, MOD_SHIFT | MOD_NOREPEAT, VK_SNAPSHOT);
     MSG msg;
     while (GetMessage(&msg, hwnd, 0, 0))
     {
-        if (msg.message == WM_HOTKEY) { emit comm->showOverlay(); }
+        if (msg.message == WM_HOTKEY)
+        {
+            if (msg.wParam == 1)
+                emit comm->showOverlay();
+            else if (msg.wParam == 2)
+                emit comm->captureFullscreen();
+        }
         else if (msg.message == WM_REREGISTER_HOTKEY)
         {
             UnregisterHotKey(hwnd, 1);
@@ -36,6 +44,7 @@ void hotkeyThread(Communicator* comm)
         DispatchMessage(&msg);
     }
     UnregisterHotKey(hwnd, 1);
+    UnregisterHotKey(hwnd, 2);
 }
 
 int main(int argc, char* argv[])
@@ -124,6 +133,10 @@ int main(int argc, char* argv[])
     QObject::connect(
         &comm, &Communicator::resumeHotkey,
         [hotkeyThreadId]() { PostThreadMessageW(hotkeyThreadId, WM_RESUME_HOTKEY, 0, 0); }
+    );
+
+    QObject::connect(
+        &comm, &Communicator::captureFullscreen, &app, [&]() { copyPixmap(grabFullscreenAtCursor()); }, Qt::QueuedConnection
     );
 
     QObject::connect(
