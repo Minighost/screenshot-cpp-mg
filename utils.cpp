@@ -6,6 +6,7 @@
 #include <QClipboard>
 #include <QSvgRenderer>
 #include <QPainter>
+#include <QScreen>
 // #include <QDebug>
 #include "windows.h"
 
@@ -85,4 +86,26 @@ QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers)
     if (modifiers & MOD_WIN) result += "Win+";
     result += vkToDisplayString(vk);
     return result;
+}
+
+QPixmap grabVirtualDesktop()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QRect geo = screen->virtualGeometry();
+    return screen->grabWindow(0, geo.x(), geo.y(), geo.width(), geo.height());
+}
+
+QRect physicalCrop(const QRect& logicalRect, qreal dpr)
+{
+    return QRect(
+        int(logicalRect.x() * dpr), int(logicalRect.y() * dpr), int(logicalRect.width() * dpr),
+        int(logicalRect.height() * dpr)
+    );
+}
+
+QPixmap grabFullscreenAtCursor()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) screen = QGuiApplication::primaryScreen();
+    return grabVirtualDesktop().copy(physicalCrop(screen->geometry(), screen->devicePixelRatio()));
 }
