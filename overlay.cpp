@@ -139,7 +139,7 @@ void CaptureOverlay::paintEvent(QPaintEvent* event)
 
     if (!_screenshot.isNull())
     {
-        QRect phys = cropPhys(sel);
+        QRect phys = physicalCrop(sel, _dpr);
         painter.drawPixmap(sel, _screenshot, phys);
     }
 
@@ -270,9 +270,6 @@ QRect CaptureOverlay::applyHandleDrag(const QRect& sel, DragState handle, const 
     return QRect(QPoint(l, t), QPoint(r, b)).normalized();
 }
 
-QRect CaptureOverlay::cropPhys(const QRect& sel) const
-{ return QRect(int(sel.x() * _dpr), int(sel.y() * _dpr), int(sel.width() * _dpr), int(sel.height() * _dpr)); }
-
 void CaptureOverlay::updateCursor(const QPoint& pos)
 {
     if (!_sel.isNull() && _sel.isValid())
@@ -326,7 +323,7 @@ void CaptureOverlay::saveSelection()
     if (_sel.isNull() || _screenshot.isNull()) return;
 
     QRect sel = _sel.normalized();
-    QPixmap crop = _screenshot.copy(cropPhys(sel));
+    QPixmap crop = _screenshot.copy(physicalCrop(sel, _dpr));
 
     savePixmap(crop, this);
     cleanClose();
@@ -337,7 +334,7 @@ void CaptureOverlay::copyToClipboard()
     if (_sel.isNull() || _screenshot.isNull()) return;
 
     QRect sel = _sel.normalized();
-    QPixmap crop = _screenshot.copy(cropPhys(sel));
+    QPixmap crop = _screenshot.copy(physicalCrop(sel, _dpr));
 
     copyPixmap(crop);
     cleanClose();
@@ -348,7 +345,7 @@ void CaptureOverlay::openPreview()
     if (_sel.isNull() || _screenshot.isNull()) return;
 
     QRect sel = _sel.normalized();
-    QPixmap crop = _screenshot.copy(cropPhys(sel));
+    QPixmap crop = _screenshot.copy(physicalCrop(sel, _dpr));
 
     PreviewWindow* window = new PreviewWindow();
     window->setPixmap(crop);

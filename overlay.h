@@ -58,7 +58,6 @@ class CaptureOverlay : public QWidget
     QRect handleRect(int cx, int cy, int size) const;
     QMap<DragState, QRect> handlesFor(const QRect& sel, int size) const;
     QRect applyHandleDrag(const QRect& sel, DragState handle, const QPoint& delta) const;
-    QRect cropPhys(const QRect& sel) const;
 
     void updateCursor(const QPoint& pos);
     void updateLabelAndActions();

@@ -88,22 +88,20 @@ QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers)
     return result;
 }
 
+QRect physicalCrop(const QRect& logicalRect, qreal dpr)
+{
+    return QRect(
+        int(logicalRect.x() * dpr), int(logicalRect.y() * dpr), int(logicalRect.width() * dpr),
+        int(logicalRect.height() * dpr)
+    );
+}
+
 QPixmap grabFullscreenAtCursor()
 {
-    // technically a duplication of overlay.cpp
-    // exists here because it's not exactly part of the overlay...
-    // but i'm not entirely sure what the correct solution is
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
     if (!screen) screen = QGuiApplication::primaryScreen();
-
     QScreen* primary = QGuiApplication::primaryScreen();
     QRect virtualGeo = primary->virtualGeometry();
-    qreal dpr = screen->devicePixelRatio();
-    QRect geo = screen->geometry();
-
-    QPixmap virtualPixmap =
-        primary->grabWindow(0, virtualGeo.x(), virtualGeo.y(), virtualGeo.width(), virtualGeo.height());
-
-    QRect physCrop(int(geo.x() * dpr), int(geo.y() * dpr), int(geo.width() * dpr), int(geo.height() * dpr));
-    return virtualPixmap.copy(physCrop);
+    QPixmap virtualPixmap = primary->grabWindow(0, virtualGeo.x(), virtualGeo.y(), virtualGeo.width(), virtualGeo.height());
+    return virtualPixmap.copy(physicalCrop(screen->geometry(), screen->devicePixelRatio()));
 }
