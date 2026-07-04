@@ -1,65 +1,44 @@
 #include "settings.h"
 #include <QVBoxLayout>
-#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QSettings>
 #include <QCloseEvent>
 #include <QCoreApplication>
-#include <QDebug>
+// #include <QDebug>
 #include "utils.h"
 
-SettingsWindow::SettingsWindow(QWidget* parent)
-    : QWidget(parent),
-      _hotkeyLabel(new QLabel(this)),
-      _saveButton(new QPushButton("Save", this)),
-      _changeButton(new QPushButton(tintedIcon(":/svgs/draw.svg", 16), "", this)),
-      _clearButton(new QPushButton(tintedIcon(":/svgs/delete.svg", 16), "", this))
+SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(new QPushButton("Save", this))
 {
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
-
-    _changeButton->setFixedSize(24, 24);
-    _clearButton->setFixedSize(24, 24);
-
-    _changeButton->setIconSize(QSize(12, 12));
-    _clearButton->setIconSize(QSize(12, 12));
-
-    QHBoxLayout* screenshotRegionLayout = new QHBoxLayout();
-    screenshotRegionLayout->setSpacing(1);
-    screenshotRegionLayout->addWidget(new QLabel("Screenshot: ", this));
-    screenshotRegionLayout->addWidget(_hotkeyLabel);
-    screenshotRegionLayout->addStretch();
-    screenshotRegionLayout->addWidget(_changeButton);
-    screenshotRegionLayout->addWidget(_clearButton);
 
     QLabel* keybind_notice = new QLabel("Keybinds are disabled while this window is open!", this);
 
     // actual layout
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(keybind_notice);
-    layout->addLayout(screenshotRegionLayout);
+
+    // FUTURE: add window capture here
+    for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen})
+    {
+        HotkeyRow row = _makeRow(id);
+        _rows[id] = row;
+
+        QString rowLabel = (id == HotkeyId::Overlay) ? "Screenshot:" : "Fullscreen:";
+
+        QHBoxLayout* rowLayout = new QHBoxLayout();
+        rowLayout->setSpacing(1);
+        rowLayout->addWidget(new QLabel(rowLabel, this));
+        rowLayout->addWidget(row.label);
+        rowLayout->addStretch();
+        rowLayout->addWidget(row.changeButton);
+        rowLayout->addWidget(row.clearButton);
+
+        layout->addLayout(rowLayout);
+    }
+
     layout->addWidget(_saveButton);
     setLayout(layout);
-
-    connect(
-        _changeButton, &QPushButton::clicked, this,
-        [this]()
-        {
-            if (_isCapturing)
-                _endCapture(true);  // revert
-            else
-                _beginCapture();
-        }
-    );
-
-    connect(
-        _clearButton, &QPushButton::clicked, this,
-        [this]()
-        {
-            _endCapture(false);
-            _setCurrent({});
-        }
-    );
 
     connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
 
@@ -67,29 +46,69 @@ SettingsWindow::SettingsWindow(QWidget* parent)
     _updateSaveButtonState();
 }
 
-void SettingsWindow::_beginCapture()
+HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
 {
+    HotkeyRow row;
+    row.label = new QLabel(this);
+    row.changeButton = new QPushButton(tintedIcon(":/svgs/draw.svg", 16), "", this);
+    row.clearButton = new QPushButton(tintedIcon(":/svgs/delete.svg", 16), "", this);
+
+    row.changeButton->setFixedSize(24, 24);
+    row.clearButton->setFixedSize(24, 24);
+    row.changeButton->setIconSize(QSize(12, 12));
+    row.clearButton->setIconSize(QSize(12, 12));
+
+    connect(
+        row.changeButton, &QPushButton::clicked, this,
+        [this, id]()
+        {
+            if (_isCapturing && _capturingId == id)
+                _endCapture(true);
+            else
+                _beginCapture(id);
+        }
+    );
+
+    connect(
+        row.clearButton, &QPushButton::clicked, this,
+        [this, id]()
+        {
+            if (_isCapturing && _capturingId == id) _endCapture(false);
+            _setCurrent(id, {});
+        }
+    );
+
+    return row;
+}
+
+void SettingsWindow::_beginCapture(HotkeyId id)
+{
+    // cancel any existing capture first
+    if (_isCapturing) _endCapture(false);
+
     _isCapturing = true;
-    _changeButton->setIcon(tintedIcon(":/svgs/cancel.svg", 16));
-    _hotkeyLabel->setText("Press a key...");
+    _capturingId = id;
+    _rows[id].changeButton->setIcon(tintedIcon(":/svgs/cancel.svg", 16));
+    _rows[id].label->setText("Press a key...");
     _registerRawInput();
 }
 
 void SettingsWindow::_endCapture(bool revert)
 {
-    _isCapturing = false;
-    _changeButton->setIcon(tintedIcon(":/svgs/draw.svg", 16));
+    if (!_isCapturing) return;
+    _rows[_capturingId].changeButton->setIcon(tintedIcon(":/svgs/draw.svg", 16));
     _unregisterRawInput();
-    if (revert) _setCurrent(_current);  // redisplay current without clearing it
+    if (revert) _setCurrent(_capturingId, _current[_capturingId]);
+    _isCapturing = false;
 }
 
-void SettingsWindow::_setCurrent(const HotkeyData& data)
+void SettingsWindow::_setCurrent(HotkeyId id, const HotkeyData& data)
 {
-    _current = data;
+    _current[id] = data;
     if (data.isEmpty())
-        _hotkeyLabel->setText("(none)");
+        _rows[id].label->setText("(none)");
     else
-        _hotkeyLabel->setText(hotkeyToDisplayString(data.vk, data.modifiers));
+        _rows[id].label->setText(hotkeyToDisplayString(data.vk, data.modifiers));
     _updateSaveButtonState();
 }
 
@@ -98,10 +117,15 @@ void SettingsWindow::_save()
     if (_current == _lastSaved) return;
 
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    settings.setValue("hotkey/vk", _current.vk);
-    settings.setValue("hotkey/modifiers", _current.modifiers);
 
-    emit hotkeyChanged(_current.modifiers, _current.vk);
+    for (auto it = _current.begin(); it != _current.end(); ++it)
+    {
+        if (it.value() == _lastSaved[it.key()]) continue;
+        QString key = (it.key() == HotkeyId::Overlay) ? "hotkey_overlay" : "hotkey_fullscreen";
+        settings.setValue(key + "/vk", it.value().vk);
+        settings.setValue(key + "/modifiers", it.value().modifiers);
+        emit hotkeyChanged(it.key(), it.value().modifiers, it.value().vk);
+    }
 
     _lastSaved = _current;
     _updateSaveButtonState();
@@ -110,14 +134,21 @@ void SettingsWindow::_save()
 void SettingsWindow::_loadSettings()
 {
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    HotkeyData data;
-    data.vk = settings.value("hotkey/vk", VK_SNAPSHOT).toUInt();
-    data.modifiers = settings.value("hotkey/modifiers", MOD_NOREPEAT).toUInt();
-    _lastSaved = data;
-    _setCurrent(data);
+
+    auto load = [&](HotkeyId id, const QString& key, UINT defaultVk, UINT defaultMods)
+    {
+        HotkeyData data;
+        data.vk = settings.value(key + "/vk", defaultVk).toUInt();
+        data.modifiers = settings.value(key + "/modifiers", defaultMods).toUInt();
+        _lastSaved[id] = data;
+        _setCurrent(id, data);
+    };
+
+    load(HotkeyId::Overlay, "hotkey_overlay", VK_SNAPSHOT, MOD_NOREPEAT);
+    load(HotkeyId::Fullscreen, "hotkey_fullscreen", VK_SNAPSHOT, MOD_SHIFT | MOD_NOREPEAT);
 }
 
-void SettingsWindow::_updateSaveButtonState() { _saveButton->setEnabled(!(_current == _lastSaved)); }
+void SettingsWindow::_updateSaveButtonState() { _saveButton->setEnabled(_current != _lastSaved); }
 
 void SettingsWindow::_registerRawInput()
 {
@@ -164,7 +195,6 @@ bool SettingsWindow::nativeEvent(const QByteArray& eventType, void* message, qin
             const RAWKEYBOARD& kb = raw->data.keyboard;
             if (kb.Flags & RI_KEY_BREAK)
             {
-                qDebug() << "Raw Input VKey:" << kb.VKey << "Flags:" << kb.Flags << "MakeCode:" << kb.MakeCode;
                 switch (kb.VKey)
                 {
                     case VK_CONTROL:
@@ -182,7 +212,7 @@ bool SettingsWindow::nativeEvent(const QByteArray& eventType, void* message, qin
                         if (GetKeyState(VK_LWIN) & 0x8000) data.modifiers |= MOD_WIN;
                         if (GetKeyState(VK_RWIN) & 0x8000) data.modifiers |= MOD_WIN;
                         _endCapture(false);
-                        _setCurrent(data);
+                        _setCurrent(_capturingId, data);
                         break;
                 }
             }
