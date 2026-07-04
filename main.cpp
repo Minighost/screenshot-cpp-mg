@@ -15,6 +15,7 @@
 #include "communicator.h"
 #include "captureoverlay.h"
 #include "settings.h"
+#include "windowoverlay.h"
 
 void hotkeyThread(Communicator* comm)
 {
@@ -24,8 +25,8 @@ void hotkeyThread(Communicator* comm)
     // reminder: win32 hotkey id 0 is invalid
     // not really sure if this is better or worse than simply
     // subtracting 1 from the hotkeyid
-    QMap<UINT, UINT> mods = {{1, MOD_NOREPEAT}, {2, MOD_SHIFT | MOD_NOREPEAT}};
-    QMap<UINT, UINT> vks = {{1, VK_SNAPSHOT}, {2, VK_SNAPSHOT}};
+    QMap<UINT, UINT> mods = {{1, MOD_NOREPEAT}, {2, MOD_SHIFT | MOD_NOREPEAT}, {3, MOD_ALT | MOD_NOREPEAT}};
+    QMap<UINT, UINT> vks = {{1, VK_SNAPSHOT}, {2, VK_SNAPSHOT}, {3, VK_SNAPSHOT}};
 
     for (auto it = mods.begin(); it != mods.end(); ++it) RegisterHotKey(hwnd, it.key(), it.value(), vks[it.key()]);
 
@@ -38,6 +39,8 @@ void hotkeyThread(Communicator* comm)
                 emit comm->showOverlay();
             else if (msg.wParam == 2)
                 emit comm->captureFullscreen();
+            else if (msg.wParam == 3)
+                emit comm->captureWindow();
         }
         else if (msg.message == WM_REREGISTER_HOTKEY)
         {
@@ -83,11 +86,12 @@ int main(int argc, char* argv[])
     tray.setContextMenu(menu);
     tray.show();
 
-    // Comm
     Communicator comm;
-    CaptureOverlay overlay;
+    CaptureOverlay captureOverlay;
+    WindowOverlay windowOverlay;
 
-    QObject::connect(&comm, &Communicator::showOverlay, &overlay, &CaptureOverlay::show);
+    QObject::connect(&comm, &Communicator::showOverlay, &captureOverlay, &CaptureOverlay::show);
+    QObject::connect(&comm, &Communicator::captureWindow, &windowOverlay, &WindowOverlay::show);
     QObject::connect(&comm, &Communicator::quitApp, &app, &QApplication::quit);
 
     std::promise<DWORD> threadIdPromise;

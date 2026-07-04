@@ -14,4 +14,5 @@ class Communicator : public QObject
     void pauseHotkey();
     void resumeHotkey();
     void captureFullscreen();
+    void captureWindow();
 };

@@ -18,6 +18,8 @@ qt_add_executable(screenshot-cpp-mg WIN32
     drawcommands.h
     settings.cpp
     settings.h
+    windowoverlay.cpp
+    windowoverlay.h
     app.rc
 )
 qt_add_resources(screenshot-cpp-mg "resources"
@@ -42,6 +44,7 @@ qt_add_resources(screenshot-cpp-mg "resources"
 target_link_libraries(screenshot-cpp-mg PRIVATE
     Qt6::Widgets
     Qt6::Svg
+    dwmapi
 )
 add_custom_command(TARGET screenshot-cpp-mg POST_BUILD
     COMMAND "C:/Qt/6.11.1/msvc2022_64/bin/windeployqt.exe"
