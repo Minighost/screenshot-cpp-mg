@@ -1,6 +1,8 @@
 #define WM_REREGISTER_HOTKEY (WM_APP + 1)
 #define WM_PAUSE_HOTKEY (WM_APP + 2)
 #define WM_RESUME_HOTKEY (WM_APP + 3)
+#define WM_PAUSE_ALL_HOTKEYS (WM_APP + 4)
+#define WM_RESUME_ALL_HOTKEYS (WM_APP + 5)
 
 #include <QApplication>
 #include <QThread>
@@ -17,10 +19,16 @@
 void hotkeyThread(Communicator* comm)
 {
     HWND hwnd = nullptr;
-    UINT modifiers = MOD_NOREPEAT;
-    UINT vk = VK_SNAPSHOT;
-    RegisterHotKey(hwnd, 1, MOD_NOREPEAT, VK_SNAPSHOT);
-    RegisterHotKey(hwnd, 2, MOD_SHIFT | MOD_NOREPEAT, VK_SNAPSHOT);
+
+    // map hotkeyids to some combination of hotkeys
+    // reminder: win32 hotkey id 0 is invalid
+    // not really sure if this is better or worse than simply
+    // subtracting 1 from the hotkeyid
+    QMap<UINT, UINT> mods = {{1, MOD_NOREPEAT}, {2, MOD_SHIFT | MOD_NOREPEAT}};
+    QMap<UINT, UINT> vks = {{1, VK_SNAPSHOT}, {2, VK_SNAPSHOT}};
+
+    for (auto it = mods.begin(); it != mods.end(); ++it) RegisterHotKey(hwnd, it.key(), it.value(), vks[it.key()]);
+
     MSG msg;
     while (GetMessage(&msg, hwnd, 0, 0))
     {
@@ -33,18 +41,28 @@ void hotkeyThread(Communicator* comm)
         }
         else if (msg.message == WM_REREGISTER_HOTKEY)
         {
-            UnregisterHotKey(hwnd, 1);
-            modifiers = static_cast<UINT>(msg.wParam);
-            vk = static_cast<UINT>(msg.lParam);
-            RegisterHotKey(hwnd, 1, modifiers, vk);
+            UINT id = static_cast<UINT>(msg.wParam);
+            UINT modifiers = static_cast<UINT>(msg.lParam >> 16);
+            UINT vk = static_cast<UINT>(msg.lParam & 0xFFFF);
+            UnregisterHotKey(hwnd, id);
+            mods[id] = modifiers;
+            vks[id] = vk;
+            RegisterHotKey(hwnd, id, modifiers, vk);
         }
-        else if (msg.message == WM_PAUSE_HOTKEY) { UnregisterHotKey(hwnd, 1); }
-        else if (msg.message == WM_RESUME_HOTKEY) { RegisterHotKey(hwnd, 1, modifiers, vk); }
+        else if (msg.message == WM_PAUSE_HOTKEY)
+        {
+            for (auto it = mods.begin(); it != mods.end(); ++it) UnregisterHotKey(hwnd, it.key());
+        }
+        else if (msg.message == WM_RESUME_HOTKEY)
+        {
+            for (auto it = mods.begin(); it != mods.end(); ++it)
+                RegisterHotKey(hwnd, it.key(), it.value(), vks[it.key()]);
+        }
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-    UnregisterHotKey(hwnd, 1);
-    UnregisterHotKey(hwnd, 2);
+
+    for (auto it = mods.begin(); it != mods.end(); ++it) UnregisterHotKey(hwnd, it.key());
 }
 
 int main(int argc, char* argv[])
@@ -117,11 +135,13 @@ int main(int argc, char* argv[])
     // Depends on hotkeyThreadId
     QObject::connect(
         &comm, &Communicator::hotkeyChanged,
-        [hotkeyThreadId](quint32 modifiers, quint32 vk)
+        [hotkeyThreadId](quint32 id, quint32 modifiers, quint32 vk)
         {
-            PostThreadMessageW(
-                hotkeyThreadId, WM_REREGISTER_HOTKEY, static_cast<WPARAM>(modifiers), static_cast<LPARAM>(vk)
-            );
+            // need 3 params, but only lparam and wparam are available.
+            // this will pack both modifiers and vk into lparam, leaving wparam free for the target id.
+            // apparently this is standard practice? idk lol
+            LPARAM lParam = (static_cast<LPARAM>(modifiers) << 16) | static_cast<LPARAM>(vk);
+            PostThreadMessageW(hotkeyThreadId, WM_REREGISTER_HOTKEY, static_cast<WPARAM>(id), lParam);
         }
     );
 
@@ -136,7 +156,8 @@ int main(int argc, char* argv[])
     );
 
     QObject::connect(
-        &comm, &Communicator::captureFullscreen, &app, [&]() { copyPixmap(grabFullscreenAtCursor()); }, Qt::QueuedConnection
+        &comm, &Communicator::captureFullscreen, &app, [&]() { copyPixmap(grabFullscreenAtCursor()); },
+        Qt::QueuedConnection
     );
 
     QObject::connect(

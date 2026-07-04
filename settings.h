@@ -2,6 +2,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QLabel>
+#include <QMap>
 #include <windows.h>
 
 struct HotkeyData
@@ -10,6 +11,20 @@ struct HotkeyData
     UINT modifiers = MOD_NOREPEAT;
     bool isEmpty() const { return vk == 0; }
     bool operator==(const HotkeyData& o) const { return vk == o.vk && modifiers == o.modifiers; }
+    bool operator!=(const HotkeyData& o) const { return !(*this == o); }
+};
+
+enum HotkeyId : quint32
+{
+    Overlay = 1,
+    Fullscreen = 2
+};
+
+struct HotkeyRow
+{
+    QLabel* label = nullptr;
+    QPushButton* changeButton = nullptr;
+    QPushButton* clearButton = nullptr;
 };
 
 class SettingsWindow : public QWidget
@@ -19,29 +34,27 @@ class SettingsWindow : public QWidget
     explicit SettingsWindow(QWidget* parent = nullptr);
 
    signals:
-    void hotkeyChanged(quint32 modifiers, quint32 vk);
+    void hotkeyChanged(HotkeyId id, quint32 modifiers, quint32 vk);
 
    protected:
     bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     void closeEvent(QCloseEvent* event) override;
 
    private:
-    QLabel* _hotkeyLabel;
+    QMap<HotkeyId, HotkeyRow> _rows;
+    QMap<HotkeyId, HotkeyData> _current;
+    QMap<HotkeyId, HotkeyData> _lastSaved;
     QPushButton* _saveButton;
-    QPushButton* _changeButton;
-    QPushButton* _clearButton;
-
-    HotkeyData _current;    // what's currently shown/captured
-    HotkeyData _lastSaved;  // what's saved to disk
-
     bool _isCapturing = false;
+    HotkeyId _capturingId;
 
+    HotkeyRow _makeRow(HotkeyId id);
+    void _beginCapture(HotkeyId id);
+    void _endCapture(bool revert);
+    void _setCurrent(HotkeyId id, const HotkeyData& data);
     void _save();
     void _loadSettings();
     void _updateSaveButtonState();
     void _registerRawInput();
     void _unregisterRawInput();
-    void _beginCapture();
-    void _endCapture(bool revert = false);
-    void _setCurrent(const HotkeyData& data);
 };
