@@ -1,11 +1,13 @@
-# <img src="screenshot-mg.png" width="24" height="24" alt="project icon"> screenshot-cpp-mg
+# <img src="screenshot-mg.png" width="28" height="28" alt="project icon"> screenshot-cpp-mg
 
 Screenshot utility written in C++
 
 ## Features
 
-- Persistent region selection
-  - Region stays on-screen for adjustment
+- Different modes
+  - Region select (with persistent display for adjustment)
+  - Fullscreen capture
+  - Individual window capture
 - Hotkeys
   - Ctrl+S (Save to file)
   - Ctrl+C (Copy to clipboard)
@@ -18,13 +20,12 @@ Screenshot utility written in C++
   - Enables Undo (Ctrl+Z) and Redo (Ctrl+Y)
 - Persistent settings
   - Saved in the program's directory as "settings.ini"
-  - Stores your screenshot keybind (default: Print Screen)
+  - Stores your keybinds
 
 ## TODO
 
-- Fullscreen capture
-- Window capture
-- Prettify the settings window
+- Persist last used save path
+- Add revert buttons to the settings window to revert to default settings
 
 ## Limitations
 
@@ -45,7 +46,7 @@ I will not be implementing any automated upload feature.
 
 Uses GNU's GPL-3.0 license.
 
-Some of the SVG files were downloaded from [pictoprogrammers.com](https://pictogrammers.com). [Here is their license](https://pictogrammers.com/docs/general/license/), it's "GPL friendly".
+Some of the SVG files were downloaded from [pictoprogrammers.com](https://pictogrammers.com). [Here is their license](https://pictogrammers.com/docs/general/license/), it's "GPL friendly". I have scaled some of them up to unify the icon sizes.
 
 I created the rest of the SVGs myself in Inkscape. As such, these are open to use for the public.
 
