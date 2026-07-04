@@ -18,17 +18,24 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(keybind_notice);
 
-    // FUTURE: add window capture here
-    for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen})
+    for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen, HotkeyId::WindowCapture})
     {
         HotkeyRow row = _makeRow(id);
         _rows[id] = row;
 
-        QString rowLabel = (id == HotkeyId::Overlay) ? "Screenshot:" : "Fullscreen:";
+        QString rowLabel;
+        if (id == HotkeyId::Overlay)
+            rowLabel = "Screenshot:";
+        else if (id == HotkeyId::Fullscreen)
+            rowLabel = "Fullscreen:";
+        else if (id == HotkeyId::WindowCapture)
+            rowLabel = "Window:";
+        QLabel* curLabel = new QLabel(rowLabel, this);
+        curLabel->setFixedWidth(75);
 
         QHBoxLayout* rowLayout = new QHBoxLayout();
         rowLayout->setSpacing(1);
-        rowLayout->addWidget(new QLabel(rowLabel, this));
+        rowLayout->addWidget(curLabel);
         rowLayout->addWidget(row.label);
         rowLayout->addStretch();
         rowLayout->addWidget(row.changeButton);
@@ -121,7 +128,13 @@ void SettingsWindow::_save()
     for (auto it = _current.begin(); it != _current.end(); ++it)
     {
         if (it.value() == _lastSaved[it.key()]) continue;
-        QString key = (it.key() == HotkeyId::Overlay) ? "hotkey_overlay" : "hotkey_fullscreen";
+        QString key;
+        if (it.key() == HotkeyId::Overlay)
+            key = "hotkey_overlay";
+        else if (it.key() == HotkeyId::Fullscreen)
+            key = "hotkey_fullscreen";
+        else if (it.key() == HotkeyId::WindowCapture)
+            key = "hotkey_window";
         settings.setValue(key + "/vk", it.value().vk);
         settings.setValue(key + "/modifiers", it.value().modifiers);
         emit hotkeyChanged(it.key(), it.value().modifiers, it.value().vk);
@@ -146,6 +159,7 @@ void SettingsWindow::_loadSettings()
 
     load(HotkeyId::Overlay, "hotkey_overlay", VK_SNAPSHOT, MOD_NOREPEAT);
     load(HotkeyId::Fullscreen, "hotkey_fullscreen", VK_SNAPSHOT, MOD_SHIFT | MOD_NOREPEAT);
+    load(HotkeyId::WindowCapture, "hotkey_window", VK_SNAPSHOT, MOD_ALT | MOD_NOREPEAT);
 }
 
 void SettingsWindow::_updateSaveButtonState() { _saveButton->setEnabled(_current != _lastSaved); }

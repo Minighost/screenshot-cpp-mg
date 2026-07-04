@@ -17,7 +17,8 @@ struct HotkeyData
 enum HotkeyId : quint32
 {
     Overlay = 1,
-    Fullscreen = 2
+    Fullscreen = 2,
+    WindowCapture = 3
 };
 
 struct HotkeyRow
