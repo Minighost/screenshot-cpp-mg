@@ -88,6 +88,13 @@ QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers)
     return result;
 }
 
+QPixmap grabVirtualDesktop()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QRect geo = screen->virtualGeometry();
+    return screen->grabWindow(0, geo.x(), geo.y(), geo.width(), geo.height());
+}
+
 QRect physicalCrop(const QRect& logicalRect, qreal dpr)
 {
     return QRect(
@@ -100,8 +107,5 @@ QPixmap grabFullscreenAtCursor()
 {
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
     if (!screen) screen = QGuiApplication::primaryScreen();
-    QScreen* primary = QGuiApplication::primaryScreen();
-    QRect virtualGeo = primary->virtualGeometry();
-    QPixmap virtualPixmap = primary->grabWindow(0, virtualGeo.x(), virtualGeo.y(), virtualGeo.width(), virtualGeo.height());
-    return virtualPixmap.copy(physicalCrop(screen->geometry(), screen->devicePixelRatio()));
+    return grabVirtualDesktop().copy(physicalCrop(screen->geometry(), screen->devicePixelRatio()));
 }

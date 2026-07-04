@@ -109,10 +109,9 @@ void CaptureOverlay::show()
 
     QScreen* screen = QGuiApplication::primaryScreen();
     _dpr = screen->devicePixelRatio();
-
     QRect virtualGeo = screen->virtualGeometry();
-    _screenshot = screen->grabWindow(0, virtualGeo.x(), virtualGeo.y(), virtualGeo.width(), virtualGeo.height());
 
+    _screenshot = grabVirtualDesktop();
     _screenshotLogical =
         _screenshot.scaled(virtualGeo.width(), virtualGeo.height(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 

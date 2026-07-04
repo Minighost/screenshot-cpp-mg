@@ -11,5 +11,6 @@ QIcon tintedIcon(const QString& path, int size);
 QIcon colorSwatchIcon(const QColor& color, int size = 24);
 QString vkToDisplayString(unsigned int vk);
 QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers);
+QPixmap grabVirtualDesktop();
 QRect physicalCrop(const QRect& logicalRect, qreal dpr);
 QPixmap grabFullscreenAtCursor();
