@@ -13,7 +13,7 @@
 #include <future>
 #include "utils.h"
 #include "communicator.h"
-#include "overlay.h"
+#include "captureoverlay.h"
 #include "settings.h"
 
 void hotkeyThread(Communicator* comm)

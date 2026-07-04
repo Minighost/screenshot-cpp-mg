@@ -1,6 +1,4 @@
-#include "overlay.h"
-#include "preview.h"
-#include "utils.h"
+#include "captureoverlay.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QCursor>
@@ -12,6 +10,8 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QScreen>
+#include "preview.h"
+#include "utils.h"
 
 static const int HANDLE_DRAW_SIZE = 2;
 static const int HANDLE_HIT_SIZE = 5;

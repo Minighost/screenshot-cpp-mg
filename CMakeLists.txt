@@ -8,16 +8,16 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
 qt_add_executable(screenshot-cpp-mg WIN32
     main.cpp
-    overlay.cpp
-    overlay.h
+    captureoverlay.cpp
+    captureoverlay.h
     preview.cpp
     preview.h
     utils.cpp
     utils.h
     communicator.h
     drawcommands.h
-    settings.h
     settings.cpp
+    settings.h
     app.rc
 )
 qt_add_resources(screenshot-cpp-mg "resources"
