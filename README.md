@@ -21,10 +21,6 @@ Screenshot utility written in C++
 - Persistent settings
   - Saved in the program's directory as "settings.ini"
 
-## TODO
-
-- Add revert buttons to the settings window to revert to default settings
-
 ## Limitations
 
 - Windows only

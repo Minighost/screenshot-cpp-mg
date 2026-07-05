@@ -7,6 +7,12 @@
 // #include <QDebug>
 #include "utils.h"
 
+const QMap<HotkeyId, HotkeyData> SettingsWindow::DEFAULT_HOTKEYS = {
+    {HotkeyId::Overlay, {VK_SNAPSHOT, MOD_NOREPEAT}},
+    {HotkeyId::Fullscreen, {VK_SNAPSHOT, MOD_SHIFT | MOD_NOREPEAT}},
+    {HotkeyId::WindowCapture, {VK_SNAPSHOT, MOD_ALT | MOD_NOREPEAT}},
+};
+
 SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(new QPushButton("Save", this))
 {
     setWindowTitle("Settings");
@@ -32,7 +38,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
         else if (id == HotkeyId::WindowCapture)
             rowLabel = "Window:";
         QLabel* curLabel = new QLabel(rowLabel, this);
-        curLabel->setFixedWidth(75);
+        curLabel->setFixedWidth(70);
 
         QHBoxLayout* rowLayout = new QHBoxLayout();
         rowLayout->setSpacing(1);
@@ -41,6 +47,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
         rowLayout->addStretch();
         rowLayout->addWidget(row.changeButton);
         rowLayout->addWidget(row.clearButton);
+        rowLayout->addWidget(row.revertButton);
 
         layout->addLayout(rowLayout);
     }
@@ -60,11 +67,15 @@ HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
     row.label = new QLabel(this);
     row.changeButton = new QPushButton(tintedIcon(":/svgs/draw.svg", 16), "", this);
     row.clearButton = new QPushButton(tintedIcon(":/svgs/delete.svg", 16), "", this);
+    row.revertButton = new QPushButton(tintedIcon(":/svgs/reset-zoom-level.svg", 16), "", this);
 
     row.changeButton->setFixedSize(24, 24);
     row.clearButton->setFixedSize(24, 24);
+    row.revertButton->setFixedSize(24, 24);
+
     row.changeButton->setIconSize(QSize(12, 12));
     row.clearButton->setIconSize(QSize(12, 12));
+    row.revertButton->setIconSize(QSize(12, 12));
 
     connect(
         row.changeButton, &QPushButton::clicked, this,
@@ -83,6 +94,15 @@ HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
         {
             if (_isCapturing && _capturingId == id) _endCapture(false);
             _setCurrent(id, {});
+        }
+    );
+
+    connect(
+        row.revertButton, &QPushButton::clicked, this,
+        [this, id]()
+        {
+            if (_isCapturing && _capturingId == id) _endCapture(false);
+            _setCurrent(id, DEFAULT_HOTKEYS[id]);
         }
     );
 

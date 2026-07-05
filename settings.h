@@ -26,6 +26,7 @@ struct HotkeyRow
     QLabel* label = nullptr;
     QPushButton* changeButton = nullptr;
     QPushButton* clearButton = nullptr;
+    QPushButton* revertButton = nullptr;
 };
 
 class SettingsWindow : public QWidget
@@ -48,6 +49,7 @@ class SettingsWindow : public QWidget
     QPushButton* _saveButton;
     bool _isCapturing = false;
     HotkeyId _capturingId;
+    static const QMap<HotkeyId, HotkeyData> DEFAULT_HOTKEYS;
 
     HotkeyRow _makeRow(HotkeyId id);
     void _beginCapture(HotkeyId id);
