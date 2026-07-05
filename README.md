@@ -2,6 +2,16 @@
 
 Screenshot utility written in C++
 
+## Usage
+
+Get the latest build from [/releases](https://github.com/Minighost/screenshot-cpp-mg/releases/).
+
+Download, extract, and run. Doesn't have an installer; You'll have to either add it to your start-up programs folder or have Task Scheduler launch it on login (or whenever you'd like).
+
+Only lives as a tray icon; Right click to exit or access the settings menu.
+
+If you encounter any bugs, please feel free to report them under [/issues](https://github.com/Minighost/screenshot-cpp-mg/issues/).
+
 ## Features
 
 - Different modes
@@ -15,7 +25,7 @@ Screenshot utility written in C++
   - Hotkeys work on the Preview as well
   - R (Reset zoom level in Preview)
   - Shift+R (Reset Preview window size)
-- Mark-up on the Preview
+- Mark-up on Preview
   - Includes panning, free draw, and shape draw
   - Enables Undo (Ctrl+Z) and Redo (Ctrl+Y)
 - Persistent settings
