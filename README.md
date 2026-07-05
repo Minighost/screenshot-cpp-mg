@@ -20,11 +20,9 @@ Screenshot utility written in C++
   - Enables Undo (Ctrl+Z) and Redo (Ctrl+Y)
 - Persistent settings
   - Saved in the program's directory as "settings.ini"
-  - Stores your keybinds
 
 ## TODO
 
-- Persist last used save path
 - Add revert buttons to the settings window to revert to default settings
 
 ## Limitations

@@ -7,19 +7,25 @@
 #include <QSvgRenderer>
 #include <QPainter>
 #include <QScreen>
+#include <QSettings>
+#include <QCoreApplication>
 // #include <QDebug>
 #include "windows.h"
 
 void savePixmap(const QPixmap& pixmap, QWidget* parent)
 {
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-    QString now = QDateTime::currentDateTime().toString("MM-dd-yyyy HHmmss");
-    QString defaultPath = dir + "/screenshot " + now + ".png";
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+    QString lastDir = settings.value("last_save_dir",
+        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)).toString();
 
+    QString now = QDateTime::currentDateTime().toString("MM-dd-yyyy HHmmss");
+    QString defaultPath = lastDir + "/screenshot " + now + ".png";
     QString path = QFileDialog::getSaveFileName(parent, "Save Screenshot", defaultPath, "Images (*.png)");
     if (path.isEmpty()) return;
 
     pixmap.save(path);
+
+    settings.setValue("last_save_dir", QFileInfo(path).absolutePath());
 }
 
 void copyPixmap(const QPixmap& pixmap) { QGuiApplication::clipboard()->setPixmap(pixmap); }
