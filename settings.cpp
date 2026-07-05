@@ -19,6 +19,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     setAttribute(Qt::WA_DeleteOnClose);
 
     QLabel* keybind_notice = new QLabel("Keybinds are disabled while this window is open!", this);
+    keybind_notice->setStyleSheet("color: rgba(255, 255, 0, 255);");
 
     // actual layout
     QVBoxLayout* layout = new QVBoxLayout();
@@ -52,13 +53,28 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
         layout->addLayout(rowLayout);
     }
 
-    layout->addWidget(_saveButton);
-    setLayout(layout);
+    _fullscreenPreview = new QCheckBox("Open preview after fullscreen capture", this);
+    _windowPreview = new QCheckBox("Open preview after window capture", this);
+
+    connect(_fullscreenPreview, &QCheckBox::checkStateChanged, this, [this]() { _updateStatusLabel(); });
+    connect(_windowPreview, &QCheckBox::checkStateChanged, this, [this]() { _updateStatusLabel(); });
+
+    layout->addWidget(_fullscreenPreview);
+    layout->addWidget(_windowPreview);
+
+    layout->addSpacing(5);
+
+    _statusLabel = new QLabel("All settings saved.", this);
+    _statusLabel->setStyleSheet("color: rgba(0, 255, 0, 120);");
+    layout->addWidget(_statusLabel);
+
+    layout->addSpacing(5);
 
     connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
+    layout->addWidget(_saveButton);
 
+    setLayout(layout);
     _loadSettings();
-    _updateSaveButtonState();
 }
 
 HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
@@ -137,18 +153,17 @@ void SettingsWindow::_setCurrent(HotkeyId id, const HotkeyData& data)
         _rows[id].label->setText("(none)");
     else
         _rows[id].label->setText(hotkeyToDisplayString(data.vk, data.modifiers));
-    _updateSaveButtonState();
+    _updateStatusLabel();
 }
 
 void SettingsWindow::_save()
 {
-    if (_current == _lastSaved) return;
-
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+
+    if (_isCapturing) { _endCapture(true); }
 
     for (auto it = _current.begin(); it != _current.end(); ++it)
     {
-        if (it.value() == _lastSaved[it.key()]) continue;
         QString key;
         if (it.key() == HotkeyId::Overlay)
             key = "hotkey_overlay";
@@ -156,13 +171,20 @@ void SettingsWindow::_save()
             key = "hotkey_fullscreen";
         else if (it.key() == HotkeyId::WindowCapture)
             key = "hotkey_window";
-        settings.setValue(key + "/vk", it.value().vk);
-        settings.setValue(key + "/modifiers", it.value().modifiers);
-        emit hotkeyChanged(it.key(), it.value().modifiers, it.value().vk);
+        if (it.value() != _lastSaved[it.key()])
+        {
+            settings.setValue(key + "/vk", it.value().vk);
+            settings.setValue(key + "/modifiers", it.value().modifiers);
+            emit hotkeyChanged(it.key(), it.value().modifiers, it.value().vk);
+        }
     }
 
+    settings.setValue("fullscreen_preview", _fullscreenPreview->isChecked());
+    settings.setValue("window_preview", _windowPreview->isChecked());
+    _lastSavedFullscreenPreview = _fullscreenPreview->isChecked();
+    _lastSavedWindowPreview = _windowPreview->isChecked();
     _lastSaved = _current;
-    _updateSaveButtonState();
+    _updateStatusLabel();
 }
 
 void SettingsWindow::_loadSettings()
@@ -181,9 +203,30 @@ void SettingsWindow::_loadSettings()
     load(HotkeyId::Overlay, "hotkey_overlay", VK_SNAPSHOT, MOD_NOREPEAT);
     load(HotkeyId::Fullscreen, "hotkey_fullscreen", VK_SNAPSHOT, MOD_SHIFT | MOD_NOREPEAT);
     load(HotkeyId::WindowCapture, "hotkey_window", VK_SNAPSHOT, MOD_ALT | MOD_NOREPEAT);
+
+    _fullscreenPreview->setChecked(settings.value("fullscreen_preview", false).toBool());
+    _windowPreview->setChecked(settings.value("window_preview", false).toBool());
+    _lastSavedFullscreenPreview = settings.value("fullscreen_preview", false).toBool();
+    _lastSavedWindowPreview = settings.value("window_preview", false).toBool();
 }
 
-void SettingsWindow::_updateSaveButtonState() { _saveButton->setEnabled(_current != _lastSaved); }
+void SettingsWindow::_updateStatusLabel()
+{
+    bool hotkeysChanged = _current != _lastSaved;
+    bool previewChanged = _fullscreenPreview->isChecked() != _lastSavedFullscreenPreview ||
+                          _windowPreview->isChecked() != _lastSavedWindowPreview;
+    bool hasChanges = hotkeysChanged || previewChanged;
+    if (hasChanges)
+    {
+        _statusLabel->setText("There are unsaved changes!");
+        _statusLabel->setStyleSheet("color: rgba(255, 0, 0, 255);");
+    }
+    else
+    {
+        _statusLabel->setText("All changes saved.");
+        _statusLabel->setStyleSheet("color: rgba(0, 255, 0, 120);");
+    }
+}
 
 void SettingsWindow::_registerRawInput()
 {

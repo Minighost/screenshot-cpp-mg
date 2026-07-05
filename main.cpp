@@ -8,7 +8,8 @@
 #include <QThread>
 #include <QSystemTrayIcon>
 #include <QMenu>
-#include <QDebug>
+#include <QSettings>
+// #include <QDebug>
 #include <windows.h>
 #include <future>
 #include "utils.h"
@@ -16,6 +17,7 @@
 #include "captureoverlay.h"
 #include "settings.h"
 #include "windowoverlay.h"
+#include "preview.h"
 
 void hotkeyThread(Communicator* comm)
 {
@@ -160,7 +162,22 @@ int main(int argc, char* argv[])
     );
 
     QObject::connect(
-        &comm, &Communicator::captureFullscreen, &app, [&]() { copyPixmap(grabFullscreenAtCursor()); },
+        &comm, &Communicator::captureFullscreen, &app,
+        [&]()
+        {
+            QPixmap pixmap = grabFullscreenAtCursor();
+            QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+            if (settings.value("fullscreen_preview", false).toBool())
+            {
+                PreviewWindow* window = new PreviewWindow();
+                window->setPixmap(pixmap);
+                window->show();
+            }
+            else
+            {
+                copyPixmap(pixmap);
+            }
+        },
         Qt::QueuedConnection
     );
 

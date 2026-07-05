@@ -6,9 +6,11 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QCursor>
+#include <QSettings>
 // #include <QDebug>
 #include <dwmapi.h>
 #include "utils.h"
+#include "preview.h"
 
 struct HitTestData
 {
@@ -132,7 +134,18 @@ void WindowOverlay::_capture()
 {
     if (_highlightRect.isNull() || _screenshot.isNull()) return;
     QPixmap crop = _screenshot.copy(physicalCrop(_highlightRect, _dpr));
-    copyPixmap(crop);
+
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+    if (settings.value("window_preview", false).toBool())
+    {
+        PreviewWindow* window = new PreviewWindow();
+        window->setPixmap(crop);
+        window->show();
+    }
+    else
+    {
+        copyPixmap(crop);
+    }
     _cleanClose();
 }
 

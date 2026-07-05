@@ -3,6 +3,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QMap>
+#include <QCheckBox>
 #include <windows.h>
 
 struct HotkeyData
@@ -50,6 +51,12 @@ class SettingsWindow : public QWidget
     bool _isCapturing = false;
     HotkeyId _capturingId;
     static const QMap<HotkeyId, HotkeyData> DEFAULT_HOTKEYS;
+    QCheckBox* _fullscreenPreview;
+    QCheckBox* _windowPreview;
+    bool _lastSavedFullscreenPreview = false;
+    bool _lastSavedWindowPreview = false;
+    QLabel* _statusLabel;
+
 
     HotkeyRow _makeRow(HotkeyId id);
     void _beginCapture(HotkeyId id);
@@ -57,7 +64,7 @@ class SettingsWindow : public QWidget
     void _setCurrent(HotkeyId id, const HotkeyData& data);
     void _save();
     void _loadSettings();
-    void _updateSaveButtonState();
+    void _updateStatusLabel();
     void _registerRawInput();
     void _unregisterRawInput();
 };
