@@ -4,6 +4,9 @@
 #include <QSettings>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QLineEdit>
+#include <QFileDialog>
+#include <QStandardPaths>
 // #include <QDebug>
 #include "utils.h"
 
@@ -18,13 +21,33 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
 
-    QLabel* keybind_notice = new QLabel("Keybinds are disabled while this window is open!", this);
-    keybind_notice->setStyleSheet("color: rgba(255, 255, 0, 255);");
+    // helpers for layout creation
+    auto makeDivider = [this]()
+    {
+        QFrame* line = new QFrame(this);
+        line->setFrameShape(QFrame::HLine);
+        line->setStyleSheet("color: rgba(255, 255, 255, 40);");
+        return line;
+    };
+
+    auto makeSectionTitle = [this](const QString& title)
+    {
+        QLabel* label = new QLabel(title, this);
+        label->setStyleSheet("font-weight: bold;");
+        return label;
+    };
 
     // actual layout
     QVBoxLayout* layout = new QVBoxLayout();
+
+    QLabel* keybind_notice = new QLabel("Keybinds are disabled while this window is open!", this);
+    keybind_notice->setAlignment(Qt::AlignCenter);
     layout->addWidget(keybind_notice);
-    layout->addSpacing(5);
+
+    // Hotkeys (these comments are for visually locating sections)
+    // (yes i keep getting lost)
+    layout->addWidget(makeDivider());
+    layout->addWidget(makeSectionTitle("Hotkeys"));
 
     for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen, HotkeyId::WindowCapture})
     {
@@ -53,21 +76,83 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
         layout->addLayout(rowLayout);
     }
 
-    _fullscreenPreview = new QCheckBox("Open preview after fullscreen capture", this);
-    _windowPreview = new QCheckBox("Open preview after window capture", this);
+    // Actions
+    layout->addWidget(makeDivider());
+    layout->addWidget(makeSectionTitle("Actions"));
 
-    connect(_fullscreenPreview, &QCheckBox::checkStateChanged, this, [this]() { _updateStatusLabel(); });
-    connect(_windowPreview, &QCheckBox::checkStateChanged, this, [this]() { _updateStatusLabel(); });
+    _nonPersistent = new QCheckBox("Non-persistent region selection", this);
 
-    layout->addWidget(_fullscreenPreview);
-    layout->addWidget(_windowPreview);
+    auto makeActionRow = [this](const QString& label)
+    {
+        QComboBox* combo = new QComboBox(this);
+        combo->addItem("Copy");
+        combo->addItem("Save");
+        combo->addItem("Preview");
+
+        QHBoxLayout* row = new QHBoxLayout();
+        QLabel* lbl = new QLabel(label, this);
+        lbl->setFixedWidth(70);
+        row->addWidget(lbl);
+        row->addWidget(combo);
+        row->addStretch();
+        return QPair<QHBoxLayout*, QComboBox*>(row, combo);
+    };
+
+    auto [regionRow, regionCombo] = makeActionRow("Region:");
+    auto [fullscreenRow, fullscreenCombo] = makeActionRow("Fullscreen:");
+    auto [windowRow, windowCombo] = makeActionRow("Window:");
+
+    _regionAction = regionCombo;
+    _fullscreenAction = fullscreenCombo;
+    _windowAction = windowCombo;
+
+    layout->addWidget(_nonPersistent);
+    layout->addLayout(regionRow);
+    layout->addLayout(fullscreenRow);
+    layout->addLayout(windowRow);
+
+    connect(_nonPersistent, &QCheckBox::checkStateChanged, this, &SettingsWindow::_updateStatusLabel);
+    connect(_regionAction, &QComboBox::currentIndexChanged, this, &SettingsWindow::_updateStatusLabel);
+    connect(_fullscreenAction, &QComboBox::currentIndexChanged, this, &SettingsWindow::_updateStatusLabel);
+    connect(_windowAction, &QComboBox::currentIndexChanged, this, &SettingsWindow::_updateStatusLabel);
+
+    // Save path
+    layout->addWidget(makeDivider());
+    layout->addWidget(makeSectionTitle("Save"));
+
+    QLabel* saveNotice = new QLabel("Only used for auto-save.", this);
+    saveNotice->setStyleSheet("color: rgba(255,255,255,150); font-size: 11px;");
+
+    _savePath = new QLineEdit(this);
+    _savePath->setReadOnly(true);
+
+    QPushButton* browseButton = new QPushButton("Browse...", this);
+
+    QHBoxLayout* pathRow = new QHBoxLayout();
+    pathRow->addWidget(_savePath);
+    pathRow->addWidget(browseButton);
+
+    layout->addWidget(saveNotice);
+    layout->addLayout(pathRow);
+
+    connect(browseButton, &QPushButton::clicked, this, [this]()
+    {
+        QString path = QFileDialog::getExistingDirectory(this, "Select Save Folder", _savePath->text());
+        if (!path.isEmpty())
+        {
+            _savePath->setText(path);
+            _updateStatusLabel();
+        }
+    });
+
+    connect(_savePath, &QLineEdit::textChanged, this, &SettingsWindow::_updateStatusLabel);
+
+    // Status + save button
+    layout->addWidget(makeDivider());
 
     layout->addSpacing(5);
-
     _statusLabel = new QLabel("All settings saved.", this);
-    _statusLabel->setStyleSheet("color: rgba(0, 255, 0, 120);");
     layout->addWidget(_statusLabel);
-
     layout->addSpacing(5);
 
     connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
@@ -179,10 +264,19 @@ void SettingsWindow::_save()
         }
     }
 
-    settings.setValue("fullscreen_preview", _fullscreenPreview->isChecked());
-    settings.setValue("window_preview", _windowPreview->isChecked());
-    _lastSavedFullscreenPreview = _fullscreenPreview->isChecked();
-    _lastSavedWindowPreview = _windowPreview->isChecked();
+    settings.setValue("non_persistent", _nonPersistent->isChecked());
+    settings.setValue("action_region", _regionAction->currentIndex());
+    settings.setValue("action_fullscreen", _fullscreenAction->currentIndex());
+    settings.setValue("action_window", _windowAction->currentIndex());
+
+    _lastSavedNonPersistent = _nonPersistent->isChecked();
+    _lastSavedRegionAction = _regionAction->currentIndex();
+    _lastSavedFullscreenAction = _fullscreenAction->currentIndex();
+    _lastSavedWindowAction = _windowAction->currentIndex();
+
+    settings.setValue("save_path", _savePath->text());
+    _lastSavedPath = _savePath->text();
+
     _lastSaved = _current;
     _updateStatusLabel();
 }
@@ -204,27 +298,37 @@ void SettingsWindow::_loadSettings()
     load(HotkeyId::Fullscreen, "hotkey_fullscreen", VK_SNAPSHOT, MOD_SHIFT | MOD_NOREPEAT);
     load(HotkeyId::WindowCapture, "hotkey_window", VK_SNAPSHOT, MOD_ALT | MOD_NOREPEAT);
 
-    _fullscreenPreview->setChecked(settings.value("fullscreen_preview", false).toBool());
-    _windowPreview->setChecked(settings.value("window_preview", false).toBool());
-    _lastSavedFullscreenPreview = settings.value("fullscreen_preview", false).toBool();
-    _lastSavedWindowPreview = settings.value("window_preview", false).toBool();
+    _nonPersistent->setChecked(settings.value("non_persistent", false).toBool());
+    _regionAction->setCurrentIndex(settings.value("action_region", 0).toInt());
+    _fullscreenAction->setCurrentIndex(settings.value("action_fullscreen", 0).toInt());
+    _windowAction->setCurrentIndex(settings.value("action_window", 0).toInt());
+
+    _lastSavedNonPersistent = _nonPersistent->isChecked();
+    _lastSavedRegionAction = _regionAction->currentIndex();
+    _lastSavedFullscreenAction = _fullscreenAction->currentIndex();
+    _lastSavedWindowAction = _windowAction->currentIndex();
+
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    _savePath->setText(settings.value("save_path", defaultPath).toString());
+    _lastSavedPath = _savePath->text();
 }
 
 void SettingsWindow::_updateStatusLabel()
 {
     bool hotkeysChanged = _current != _lastSaved;
-    bool previewChanged = _fullscreenPreview->isChecked() != _lastSavedFullscreenPreview ||
-                          _windowPreview->isChecked() != _lastSavedWindowPreview;
-    bool hasChanges = hotkeysChanged || previewChanged;
+    bool behaviorChanged = _nonPersistent->isChecked() != _lastSavedNonPersistent ||
+                           _regionAction->currentIndex() != _lastSavedRegionAction ||
+                           _fullscreenAction->currentIndex() != _lastSavedFullscreenAction ||
+                           _windowAction->currentIndex() != _lastSavedWindowAction;
+    bool pathChanged = _savePath->text() != _lastSavedPath;
+    bool hasChanges = hotkeysChanged || behaviorChanged || pathChanged;
     if (hasChanges)
     {
         _statusLabel->setText("There are unsaved changes!");
-        _statusLabel->setStyleSheet("color: rgba(255, 0, 0, 255);");
     }
     else
     {
         _statusLabel->setText("All changes saved.");
-        _statusLabel->setStyleSheet("color: rgba(0, 255, 0, 120);");
     }
 }
 

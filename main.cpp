@@ -18,6 +18,7 @@
 #include "settings.h"
 #include "windowoverlay.h"
 #include "preview.h"
+#include "types.h"
 
 void hotkeyThread(Communicator* comm)
 {
