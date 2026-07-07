@@ -31,6 +31,13 @@ If you encounter any bugs, please feel free to report them under [/issues](https
 - Persistent settings
   - Saved in the program's directory as "settings.ini"
 
+## TODO
+
+- Add a dropdown to switch between copy, save, and preview on actions
+- Add a toggle to include the cursor
+- Add a button to set a persist save path (for auto copy)
+- Add build instructions to README
+
 ## Limitations
 
 - Windows only
@@ -39,6 +46,10 @@ If you encounter any bugs, please feel free to report them under [/issues](https
 - Does not account for non-uniform DPR settings
   - If you have different DPR settings (100%, 125%, 150%, etc) for each monitor, it might lead to some wonky results
   - Always uses the DPR of your primary monitor
+- Doesn't work when an elevated fullscreen app is running
+  - Pretty much any game with a kernel level anti-cheat
+  - Valorant, Battlefield 6, and Wuthering Waves all didn't allow screenshots
+  - Fix: Run program as admin
 
 ## Disclaimer
 
