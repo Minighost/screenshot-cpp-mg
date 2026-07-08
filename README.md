@@ -33,10 +33,9 @@ If you encounter any bugs, please feel free to report them under [/issues](https
 
 ## TODO
 
-- Add a dropdown to switch between copy, save, and preview on actions
 - Add a toggle to include the cursor
-- Add a button to set a persist save path (for auto copy)
 - Add build instructions to README
+- Add names to auto-save filenames for "source" (region, fullscreen, window)
 
 ## Limitations
 

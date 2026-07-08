@@ -9,6 +9,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QSettings>
+#include <QStandardPaths>
 // #include <QDebug>
 #include <windows.h>
 #include <future>
@@ -18,6 +19,7 @@
 #include "settings.h"
 #include "windowoverlay.h"
 #include "preview.h"
+#include "types.h"
 
 void hotkeyThread(Communicator* comm)
 {
@@ -74,6 +76,27 @@ int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
     app.setQuitOnLastWindowClosed(false);
+
+    // Init Setting file
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+
+    auto initDefault = [&](const QString& key, const QVariant& value)
+    {
+        if (!settings.contains(key)) settings.setValue(key, value);
+    };
+
+    initDefault("hotkey_overlay/vk", VK_SNAPSHOT);
+    initDefault("hotkey_overlay/modifiers", MOD_NOREPEAT);
+    initDefault("hotkey_fullscreen/vk", VK_SNAPSHOT);
+    initDefault("hotkey_fullscreen/modifiers", MOD_SHIFT | MOD_NOREPEAT);
+    initDefault("hotkey_window/vk", VK_SNAPSHOT);
+    initDefault("hotkey_window/modifiers", MOD_ALT | MOD_NOREPEAT);
+    initDefault("non_persistent", false);
+    initDefault("action_region", 0);
+    initDefault("action_fullscreen", 0);
+    initDefault("action_window", 0);
+    initDefault("save_path", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
+
 
     // Tray Icon
     QSystemTrayIcon tray;
@@ -165,18 +188,9 @@ int main(int argc, char* argv[])
         &comm, &Communicator::captureFullscreen, &app,
         [&]()
         {
-            QPixmap pixmap = grabFullscreenAtCursor();
             QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-            if (settings.value("fullscreen_preview", false).toBool())
-            {
-                PreviewWindow* window = new PreviewWindow();
-                window->setPixmap(pixmap);
-                window->show();
-            }
-            else
-            {
-                copyPixmap(pixmap);
-            }
+            CaptureAction action = static_cast<CaptureAction>(settings.value("action_fullscreen", 0).toInt());
+            performCaptureAction(grabFullscreenAtCursor(), action);
         },
         Qt::QueuedConnection
     );

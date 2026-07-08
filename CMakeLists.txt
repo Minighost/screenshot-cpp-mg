@@ -20,6 +20,7 @@ qt_add_executable(screenshot-cpp-mg WIN32
     settings.h
     windowoverlay.cpp
     windowoverlay.h
+    types.h
     app.rc
 )
 qt_add_resources(screenshot-cpp-mg "resources"

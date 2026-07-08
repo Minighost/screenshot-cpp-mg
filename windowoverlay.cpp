@@ -134,18 +134,9 @@ void WindowOverlay::_capture()
 {
     if (_highlightRect.isNull() || _screenshot.isNull()) return;
     QPixmap crop = _screenshot.copy(physicalCrop(_highlightRect, _dpr));
-
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    if (settings.value("window_preview", false).toBool())
-    {
-        PreviewWindow* window = new PreviewWindow();
-        window->setPixmap(crop);
-        window->show();
-    }
-    else
-    {
-        copyPixmap(crop);
-    }
+    CaptureAction action = static_cast<CaptureAction>(settings.value("action_window", 0).toInt());
+    performCaptureAction(crop, action);
     _cleanClose();
 }
 

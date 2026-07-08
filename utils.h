@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QIcon>
 #include <QColor>
+#include "types.h"
 
 void savePixmap(const QPixmap& pixmap, QWidget* parent = nullptr);
 void copyPixmap(const QPixmap& pixmap);
@@ -14,3 +15,4 @@ QString hotkeyToDisplayString(unsigned int vk, unsigned int modifiers);
 QPixmap grabVirtualDesktop();
 QRect physicalCrop(const QRect& logicalRect, qreal dpr);
 QPixmap grabFullscreenAtCursor();
+void performCaptureAction(const QPixmap& pixmap, CaptureAction action, QWidget* parent = nullptr);
