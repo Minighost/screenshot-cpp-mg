@@ -56,7 +56,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent)
 
         QString rowLabel;
         if (id == HotkeyId::Overlay)
-            rowLabel = "Screenshot:";
+            rowLabel = "Region:";
         else if (id == HotkeyId::Fullscreen)
             rowLabel = "Fullscreen:";
         else if (id == HotkeyId::WindowCapture)
@@ -91,14 +91,14 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent)
 
         QHBoxLayout* row = new QHBoxLayout();
         QLabel* lbl = new QLabel(label, this);
-        lbl->setFixedWidth(70);
+        lbl->setFixedWidth(80);
         row->addWidget(lbl);
         row->addWidget(combo);
         row->addStretch();
         return QPair<QHBoxLayout*, QComboBox*>(row, combo);
     };
 
-    auto [regionRow, regionCombo] = makeActionRow("Region:");
+    auto [regionRow, regionCombo] = makeActionRow("Instant Region:");
     auto [fullscreenRow, fullscreenCombo] = makeActionRow("Fullscreen:");
     auto [windowRow, windowCombo] = makeActionRow("Window:");
 
