@@ -32,7 +32,6 @@ class SettingsWindow : public QWidget
    private:
     QMap<HotkeyId, HotkeyRow> _rows;
     QMap<HotkeyId, HotkeyData> _current;
-    QMap<HotkeyId, HotkeyData> _lastSaved;
     QPushButton* _saveButton;
     bool _isCapturing = false;
     HotkeyId _capturingId;
@@ -43,13 +42,7 @@ class SettingsWindow : public QWidget
     QComboBox* _regionAction;
     QComboBox* _fullscreenAction;
     QComboBox* _windowAction;
-    bool _lastSavedNonPersistent = false;
-    int _lastSavedRegionAction = 0;
-    int _lastSavedFullscreenAction = 0;
-    int _lastSavedWindowAction = 0;
-
     QLineEdit* _savePath;
-    QString _lastSavedPath;
 
     HotkeyRow _makeRow(HotkeyId id);
     void _beginCapture(HotkeyId id);

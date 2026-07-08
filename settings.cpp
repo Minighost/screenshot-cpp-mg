@@ -135,15 +135,18 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     layout->addWidget(saveNotice);
     layout->addLayout(pathRow);
 
-    connect(browseButton, &QPushButton::clicked, this, [this]()
-    {
-        QString path = QFileDialog::getExistingDirectory(this, "Select Save Folder", _savePath->text());
-        if (!path.isEmpty())
+    connect(
+        browseButton, &QPushButton::clicked, this,
+        [this]()
         {
-            _savePath->setText(path);
-            _updateStatusLabel();
+            QString path = QFileDialog::getExistingDirectory(this, "Select Save Folder", _savePath->text());
+            if (!path.isEmpty())
+            {
+                _savePath->setText(path);
+                _updateStatusLabel();
+            }
         }
-    });
+    );
 
     connect(_savePath, &QLineEdit::textChanged, this, &SettingsWindow::_updateStatusLabel);
 
@@ -152,6 +155,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
 
     layout->addSpacing(5);
     _statusLabel = new QLabel("All settings saved.", this);
+    _statusLabel->setStyleSheet("color: rgba(255, 255, 255, 120);");
     layout->addWidget(_statusLabel);
     layout->addSpacing(5);
 
@@ -213,7 +217,7 @@ HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
 void SettingsWindow::_beginCapture(HotkeyId id)
 {
     // cancel any existing capture first
-    if (_isCapturing) _endCapture(false);
+    if (_isCapturing) _endCapture(true);
 
     _isCapturing = true;
     _capturingId = id;
@@ -256,7 +260,8 @@ void SettingsWindow::_save()
             key = "hotkey_fullscreen";
         else if (it.key() == HotkeyId::WindowCapture)
             key = "hotkey_window";
-        if (it.value() != _lastSaved[it.key()])
+        if (it.value().vk != settings.value(key + "/vk").toUInt() ||
+            it.value().modifiers != settings.value(key + "/modifiers").toUInt())
         {
             settings.setValue(key + "/vk", it.value().vk);
             settings.setValue(key + "/modifiers", it.value().modifiers);
@@ -268,16 +273,8 @@ void SettingsWindow::_save()
     settings.setValue("action_region", _regionAction->currentIndex());
     settings.setValue("action_fullscreen", _fullscreenAction->currentIndex());
     settings.setValue("action_window", _windowAction->currentIndex());
-
-    _lastSavedNonPersistent = _nonPersistent->isChecked();
-    _lastSavedRegionAction = _regionAction->currentIndex();
-    _lastSavedFullscreenAction = _fullscreenAction->currentIndex();
-    _lastSavedWindowAction = _windowAction->currentIndex();
-
     settings.setValue("save_path", _savePath->text());
-    _lastSavedPath = _savePath->text();
 
-    _lastSaved = _current;
     _updateStatusLabel();
 }
 
@@ -290,7 +287,6 @@ void SettingsWindow::_loadSettings()
         HotkeyData data;
         data.vk = settings.value(key + "/vk", defaultVk).toUInt();
         data.modifiers = settings.value(key + "/modifiers", defaultMods).toUInt();
-        _lastSaved[id] = data;
         _setCurrent(id, data);
     };
 
@@ -303,32 +299,49 @@ void SettingsWindow::_loadSettings()
     _fullscreenAction->setCurrentIndex(settings.value("action_fullscreen", 0).toInt());
     _windowAction->setCurrentIndex(settings.value("action_window", 0).toInt());
 
-    _lastSavedNonPersistent = _nonPersistent->isChecked();
-    _lastSavedRegionAction = _regionAction->currentIndex();
-    _lastSavedFullscreenAction = _fullscreenAction->currentIndex();
-    _lastSavedWindowAction = _windowAction->currentIndex();
-
     QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
     _savePath->setText(settings.value("save_path", defaultPath).toString());
-    _lastSavedPath = _savePath->text();
 }
 
 void SettingsWindow::_updateStatusLabel()
 {
-    bool hotkeysChanged = _current != _lastSaved;
-    bool behaviorChanged = _nonPersistent->isChecked() != _lastSavedNonPersistent ||
-                           _regionAction->currentIndex() != _lastSavedRegionAction ||
-                           _fullscreenAction->currentIndex() != _lastSavedFullscreenAction ||
-                           _windowAction->currentIndex() != _lastSavedWindowAction;
-    bool pathChanged = _savePath->text() != _lastSavedPath;
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+
+    bool hotkeysChanged = false;
+    for (auto it = _current.begin(); it != _current.end(); ++it)
+    {
+        QString key;
+        if (it.key() == HotkeyId::Overlay)
+            key = "hotkey_overlay";
+        else if (it.key() == HotkeyId::Fullscreen)
+            key = "hotkey_fullscreen";
+        else if (it.key() == HotkeyId::WindowCapture)
+            key = "hotkey_window";
+        if (it.value().vk != settings.value(key + "/vk").toUInt() ||
+            it.value().modifiers != settings.value(key + "/modifiers").toUInt())
+        {
+            hotkeysChanged = true;
+            break;
+        }
+    }
+
+    bool behaviorChanged = _nonPersistent->isChecked() != settings.value("non_persistent").toBool() ||
+                           _regionAction->currentIndex() != settings.value("action_region").toInt() ||
+                           _fullscreenAction->currentIndex() != settings.value("action_fullscreen").toInt() ||
+                           _windowAction->currentIndex() != settings.value("action_window").toInt();
+
+    bool pathChanged = _savePath->text() != settings.value("save_path").toString();
+
     bool hasChanges = hotkeysChanged || behaviorChanged || pathChanged;
     if (hasChanges)
     {
         _statusLabel->setText("There are unsaved changes!");
+        _statusLabel->setStyleSheet("color: rgba(255, 0, 0, 200);");
     }
     else
     {
         _statusLabel->setText("All changes saved.");
+        _statusLabel->setStyleSheet("color: rgba(255, 255, 255, 120);");
     }
 }
 
