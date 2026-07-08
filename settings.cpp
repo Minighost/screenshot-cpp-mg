@@ -80,7 +80,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     layout->addWidget(makeDivider());
     layout->addWidget(makeSectionTitle("Actions"));
 
-    _nonPersistent = new QCheckBox("Non-persistent region selection", this);
+    _nonPersistent = new QCheckBox("Instant region selection (enables selected action)", this);
 
     auto makeActionRow = [this](const QString& label)
     {

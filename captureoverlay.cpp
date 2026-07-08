@@ -10,8 +10,11 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QScreen>
+#include <QSettings>
+#include <QCoreApplication>
 #include "preview.h"
 #include "utils.h"
+#include "types.h"
 
 static const int HANDLE_DRAW_SIZE = 2;
 static const int HANDLE_HIT_SIZE = 5;
@@ -225,10 +228,22 @@ void CaptureOverlay::mouseReleaseEvent(QMouseEvent* event)
         _sel = QRect();
         _label->hide();
         _actionsBox->hide();
+        return;
     }
 
     _sel = _sel.normalized();
     _state = DRAG_NONE;
+
+    QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+    if (settings.value("non_persistent", false).toBool())
+    {
+        CaptureAction action = static_cast<CaptureAction>(settings.value("action_region", 0).toInt());
+        QPixmap crop = _screenshot.copy(physicalCrop(_sel, _dpr));
+        performCaptureAction(crop, action);
+        cleanClose();
+        return;
+    }
+
     updateCursor(event->pos());
     updateLabelAndActions();
     update();

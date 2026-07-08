@@ -166,18 +166,9 @@ int main(int argc, char* argv[])
         &comm, &Communicator::captureFullscreen, &app,
         [&]()
         {
-            QPixmap pixmap = grabFullscreenAtCursor();
             QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-            if (settings.value("fullscreen_preview", false).toBool())
-            {
-                PreviewWindow* window = new PreviewWindow();
-                window->setPixmap(pixmap);
-                window->show();
-            }
-            else
-            {
-                copyPixmap(pixmap);
-            }
+            CaptureAction action = static_cast<CaptureAction>(settings.value("action_fullscreen", 0).toInt());
+            performCaptureAction(grabFullscreenAtCursor(), action);
         },
         Qt::QueuedConnection
     );

@@ -10,13 +10,14 @@
 #include <QSettings>
 #include <QCoreApplication>
 // #include <QDebug>
+#include "preview.h"
 #include "windows.h"
 
 void savePixmap(const QPixmap& pixmap, QWidget* parent)
 {
     QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
-    QString lastDir = settings.value("last_save_dir",
-        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)).toString();
+    QString lastDir =
+        settings.value("last_save_dir", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)).toString();
 
     QString now = QDateTime::currentDateTime().toString("MM-dd-yyyy HHmmss");
     QString defaultPath = lastDir + "/screenshot " + now + ".png";
@@ -114,4 +115,29 @@ QPixmap grabFullscreenAtCursor()
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
     if (!screen) screen = QGuiApplication::primaryScreen();
     return grabVirtualDesktop().copy(physicalCrop(screen->geometry(), screen->devicePixelRatio()));
+}
+
+void performCaptureAction(const QPixmap& pixmap, CaptureAction action, QWidget* parent)
+{
+    switch (action)
+    {
+        case CaptureAction::Copy: copyPixmap(pixmap); break;
+        case CaptureAction::Save:
+        {
+            QSettings settings(QCoreApplication::applicationDirPath() + "/settings.ini", QSettings::IniFormat);
+            QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+            QString dir = settings.value("save_path", defaultPath).toString();
+            QString now = QDateTime::currentDateTime().toString("MM-dd-yyyy HHmmss");
+            QString path = dir + "/screenshot " + now + ".png";
+            pixmap.save(path);
+            break;
+        }
+        case CaptureAction::Preview:
+        {
+            PreviewWindow* window = new PreviewWindow();
+            window->setPixmap(pixmap);
+            window->show();
+            break;
+        }
+    }
 }
