@@ -33,6 +33,7 @@ class SettingsWindow : public QWidget
     QMap<HotkeyId, HotkeyRow> _rows;
     QMap<HotkeyId, HotkeyData> _current;
     QPushButton* _saveButton;
+    QPushButton* _cancelButton;
     bool _isCapturing = false;
     HotkeyId _capturingId;
     static const QMap<HotkeyId, HotkeyData> DEFAULT_HOTKEYS;
@@ -44,7 +45,7 @@ class SettingsWindow : public QWidget
     QComboBox* _windowAction;
     QLineEdit* _savePath;
 
-    HotkeyRow _makeRow(HotkeyId id);
+    HotkeyRow _makeHotkeyRow(HotkeyId id);
     void _beginCapture(HotkeyId id);
     void _endCapture(bool revert);
     void _setCurrent(HotkeyId id, const HotkeyData& data);

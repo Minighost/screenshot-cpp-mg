@@ -16,7 +16,7 @@ const QMap<HotkeyId, HotkeyData> SettingsWindow::DEFAULT_HOTKEYS = {
     {HotkeyId::WindowCapture, {VK_SNAPSHOT, MOD_ALT | MOD_NOREPEAT}},
 };
 
-SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(new QPushButton("Save", this))
+SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent)
 {
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
@@ -51,7 +51,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
 
     for (HotkeyId id : {HotkeyId::Overlay, HotkeyId::Fullscreen, HotkeyId::WindowCapture})
     {
-        HotkeyRow row = _makeRow(id);
+        HotkeyRow row = _makeHotkeyRow(id);
         _rows[id] = row;
 
         QString rowLabel;
@@ -150,7 +150,7 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
 
     connect(_savePath, &QLineEdit::textChanged, this, &SettingsWindow::_updateStatusLabel);
 
-    // Status + save button
+    // Status + save/cancel buttons
     layout->addWidget(makeDivider());
 
     layout->addSpacing(5);
@@ -159,14 +159,23 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent), _saveButton(n
     layout->addWidget(_statusLabel);
     layout->addSpacing(5);
 
+    QHBoxLayout* saveCancelRow = new QHBoxLayout();
+    _saveButton = new QPushButton("Save", this);
+    _cancelButton = new QPushButton("Cancel", this);
+
     connect(_saveButton, &QPushButton::clicked, this, &SettingsWindow::_save);
-    layout->addWidget(_saveButton);
+    connect(_cancelButton, &QPushButton::clicked, this, &SettingsWindow::close);
+
+    saveCancelRow->addWidget(_saveButton);
+    saveCancelRow->addWidget(_cancelButton);
+
+    layout->addLayout(saveCancelRow);
 
     setLayout(layout);
     _loadSettings();
 }
 
-HotkeyRow SettingsWindow::_makeRow(HotkeyId id)
+HotkeyRow SettingsWindow::_makeHotkeyRow(HotkeyId id)
 {
     HotkeyRow row;
     row.label = new QLabel(this);
@@ -367,7 +376,7 @@ void SettingsWindow::_unregisterRawInput()
 
 void SettingsWindow::closeEvent(QCloseEvent* event)
 {
-    if (_isCapturing) _unregisterRawInput();
+    if (_isCapturing) _endCapture(true);
     QWidget::closeEvent(event);
 }
 
