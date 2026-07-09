@@ -260,10 +260,10 @@ PreviewWindow::PreviewWindow()
     spacer->setFixedWidth(2);
     _toolbar->addWidget(spacer);
 
-    QAction* saveAction = _toolbar->addAction(tintedIcon(":/svgs/save.svg"), "");
-    QAction* copyAction = _toolbar->addAction(tintedIcon(":/svgs/copy.svg"), "");
-    QAction* resetZoomAction = _toolbar->addAction(tintedIcon(":/svgs/reset-zoom-level.svg"), "");
-    QAction* resetWindowAction = _toolbar->addAction(tintedIcon(":/svgs/reset-window-size.svg"), "");
+    QAction* saveAction = _toolbar->addAction(tintedIcon(":/save.svg"), "");
+    QAction* copyAction = _toolbar->addAction(tintedIcon(":/copy.svg"), "");
+    QAction* resetZoomAction = _toolbar->addAction(tintedIcon(":/reset-zoom-level.svg"), "");
+    QAction* resetWindowAction = _toolbar->addAction(tintedIcon(":/reset-window-size.svg"), "");
 
     saveAction->setToolTip("Save (Ctrl+S)");
     copyAction->setToolTip("Copy (Ctrl+C)");
@@ -308,17 +308,17 @@ PreviewWindow::PreviewWindow()
         return action;
     };
 
-    addTool(tintedIcon(":/svgs/pan.svg"), "Pan", PreviewTool::Pan, true);
-    addTool(tintedIcon(":/svgs/draw.svg"), "Free Draw", PreviewTool::FreeDraw);
-    addTool(tintedIcon(":/svgs/rect-outline.svg"), "Rectangle", PreviewTool::Rectangle);
-    addTool(tintedIcon(":/svgs/rect-fill.svg"), "Filled Rectangle", PreviewTool::FilledRectangle);
-    addTool(tintedIcon(":/svgs/elli-outline.svg"), "Ellipse", PreviewTool::Ellipse);
-    addTool(tintedIcon(":/svgs/elli-fill.svg"), "Filled Ellipse", PreviewTool::FilledEllipse);
-    addTool(tintedIcon(":/svgs/line.svg"), "Line", PreviewTool::Line);
-    addTool(tintedIcon(":/svgs/arrow.svg"), "Arrow", PreviewTool::Arrow);
+    addTool(tintedIcon(":/pan.svg"), "Pan", PreviewTool::Pan, true);
+    addTool(tintedIcon(":/draw.svg"), "Free Draw", PreviewTool::FreeDraw);
+    addTool(tintedIcon(":/rect-outline.svg"), "Rectangle", PreviewTool::Rectangle);
+    addTool(tintedIcon(":/rect-fill.svg"), "Filled Rectangle", PreviewTool::FilledRectangle);
+    addTool(tintedIcon(":/elli-outline.svg"), "Ellipse", PreviewTool::Ellipse);
+    addTool(tintedIcon(":/elli-fill.svg"), "Filled Ellipse", PreviewTool::FilledEllipse);
+    addTool(tintedIcon(":/line.svg"), "Line", PreviewTool::Line);
+    addTool(tintedIcon(":/arrow.svg"), "Arrow", PreviewTool::Arrow);
 
     // Add delete button to the end
-    QAction* deleteAction = _toolbar->addAction(tintedIcon(":/svgs/delete.svg"), "");
+    QAction* deleteAction = _toolbar->addAction(tintedIcon(":/delete.svg"), "");
     deleteAction->setToolTip("Delete all items");
     connect(
         deleteAction, &QAction::triggered, this,

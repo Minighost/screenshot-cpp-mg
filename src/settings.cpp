@@ -179,9 +179,9 @@ HotkeyRow SettingsWindow::_makeHotkeyRow(HotkeyId id)
 {
     HotkeyRow row;
     row.label = new QLabel(this);
-    row.changeButton = new QPushButton(tintedIcon(":/svgs/draw.svg", 16), "", this);
-    row.clearButton = new QPushButton(tintedIcon(":/svgs/delete.svg", 16), "", this);
-    row.revertButton = new QPushButton(tintedIcon(":/svgs/reset-zoom-level.svg", 16), "", this);
+    row.changeButton = new QPushButton(tintedIcon(":/draw.svg", 16), "", this);
+    row.clearButton = new QPushButton(tintedIcon(":/delete.svg", 16), "", this);
+    row.revertButton = new QPushButton(tintedIcon(":/reset-zoom-level.svg", 16), "", this);
 
     row.changeButton->setFixedSize(24, 24);
     row.clearButton->setFixedSize(24, 24);
@@ -230,7 +230,7 @@ void SettingsWindow::_beginCapture(HotkeyId id)
 
     _isCapturing = true;
     _capturingId = id;
-    _rows[id].changeButton->setIcon(tintedIcon(":/svgs/cancel.svg", 16));
+    _rows[id].changeButton->setIcon(tintedIcon(":/cancel.svg", 16));
     _rows[id].label->setText("Press a key...");
     _registerRawInput();
 }
@@ -238,7 +238,7 @@ void SettingsWindow::_beginCapture(HotkeyId id)
 void SettingsWindow::_endCapture(bool revert)
 {
     if (!_isCapturing) return;
-    _rows[_capturingId].changeButton->setIcon(tintedIcon(":/svgs/draw.svg", 16));
+    _rows[_capturingId].changeButton->setIcon(tintedIcon(":/draw.svg", 16));
     _unregisterRawInput();
     if (revert) _setCurrent(_capturingId, _current[_capturingId]);
     _isCapturing = false;

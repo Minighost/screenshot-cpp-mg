@@ -39,9 +39,9 @@ CaptureOverlay::CaptureOverlay(QWidget* parent)
       _dpr(1.0),
       _state(DRAG_NONE),
       _label(new QLabel(this)),
-      _saveButton(new QPushButton(tintedIcon(":/svgs/save.svg"), "", this)),
-      _copyButton(new QPushButton(tintedIcon(":/svgs/copy.svg"), "", this)),
-      _cancelButton(new QPushButton(tintedIcon(":/svgs/cancel.svg"), "", this)),
+      _saveButton(new QPushButton(tintedIcon(":/save.svg"), "", this)),
+      _copyButton(new QPushButton(tintedIcon(":/copy.svg"), "", this)),
+      _cancelButton(new QPushButton(tintedIcon(":/cancel.svg"), "", this)),
       _actionsBox(new QWidget(this))
 {
     setCursor(Qt::ArrowCursor);
