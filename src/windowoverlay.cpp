@@ -40,7 +40,9 @@ static BOOL CALLBACK findWindowAtPoint(HWND hwnd, LPARAM lParam)
 }
 
 WindowOverlay::WindowOverlay(QWidget* parent)
-    : QWidget(parent, Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint | Qt::Tool), _dpr(1.0)
+    : QWidget(parent, Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint | Qt::Tool),
+      _dpr(1.0),
+      _windowPicker(createWindowPicker(this))
 {
     setCursor(Qt::CrossCursor);
     setMouseTracking(true);
@@ -87,29 +89,11 @@ void WindowOverlay::paintEvent(QPaintEvent* event)
 void WindowOverlay::mouseMoveEvent(QMouseEvent* event)
 {
     QPoint screenPos = mapToGlobal(event->pos());
+    QRect newRect = _windowPicker->windowAtPoint(screenPos, winId());
 
-    HitTestData data;
-    data.pt = {screenPos.x(), screenPos.y()};
-    data.ownHwnd = (HWND)winId();
-    data.result = nullptr;
-
-    EnumWindows(findWindowAtPoint, reinterpret_cast<LPARAM>(&data));
-
-    if (data.result)
+    if (newRect != _highlightRect)
     {
-        RECT wr;
-        if (FAILED(DwmGetWindowAttribute(data.result, DWMWA_EXTENDED_FRAME_BOUNDS, &wr, sizeof(wr))))
-            GetWindowRect(data.result, &wr);
-        QRect newRect = QRect(QPoint(wr.left, wr.top), QPoint(wr.right, wr.bottom)).normalized();
-        if (newRect != _highlightRect)
-        {
-            _highlightRect = newRect;
-            update();
-        }
-    }
-    else if (!_highlightRect.isNull())
-    {
-        _highlightRect = QRect();
+        _highlightRect = newRect;
         update();
     }
 }

@@ -3,6 +3,7 @@
 #include <QPixmap>
 #include <QRect>
 #include <windows.h>
+#include "platform/platform.h"
 
 class WindowOverlay : public QWidget
 {
@@ -18,10 +19,11 @@ class WindowOverlay : public QWidget
     void keyPressEvent(QKeyEvent* event) override;
 
    private:
+    qreal _dpr;
+    WindowPicker* _windowPicker;
     QPixmap _screenshot;
     QPixmap _screenshotLogical;
     QRect _highlightRect;
-    qreal _dpr;
 
     void _capture();
     void _cleanClose();
