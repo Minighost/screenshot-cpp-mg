@@ -9,6 +9,7 @@
 #include <QStandardPaths>
 // #include <QDebug>
 #include "utils.h"
+#include "platform.h"
 
 const QMap<HotkeyId, HotkeyData> SettingsWindow::DEFAULT_HOTKEYS = {
     {HotkeyId::Overlay, {VK_SNAPSHOT, MOD_NOREPEAT}},
@@ -20,6 +21,16 @@ SettingsWindow::SettingsWindow(QWidget* parent) : QWidget(parent)
 {
     setWindowTitle("Settings");
     setAttribute(Qt::WA_DeleteOnClose);
+
+    _keyCaptureManager = createKeyCaptureManager(this);
+    connect(
+        _keyCaptureManager, &KeyCaptureManager::keyCaptured, this,
+        [this](quint32 vk, quint32 modifiers)
+        {
+            _endCapture(false);
+            _setCurrent(_capturingId, {vk, modifiers});
+        }
+    );
 
     // helpers for layout creation
     auto makeDivider = [this]()
@@ -225,21 +236,19 @@ HotkeyRow SettingsWindow::_makeHotkeyRow(HotkeyId id)
 
 void SettingsWindow::_beginCapture(HotkeyId id)
 {
-    // cancel any existing capture first
     if (_isCapturing) _endCapture(true);
-
     _isCapturing = true;
     _capturingId = id;
     _rows[id].changeButton->setIcon(tintedIcon(":/cancel.svg", 16));
     _rows[id].label->setText("Press a key...");
-    _registerRawInput();
+    _keyCaptureManager->startCapture(winId());
 }
 
 void SettingsWindow::_endCapture(bool revert)
 {
     if (!_isCapturing) return;
     _rows[_capturingId].changeButton->setIcon(tintedIcon(":/draw.svg", 16));
-    _unregisterRawInput();
+    _keyCaptureManager->stopCapture();
     if (revert) _setCurrent(_capturingId, _current[_capturingId]);
     _isCapturing = false;
 }
@@ -354,26 +363,6 @@ void SettingsWindow::_updateStatusLabel()
     }
 }
 
-void SettingsWindow::_registerRawInput()
-{
-    RAWINPUTDEVICE rid;
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x06;
-    rid.dwFlags = RIDEV_INPUTSINK;
-    rid.hwndTarget = (HWND)winId();
-    RegisterRawInputDevices(&rid, 1, sizeof(rid));
-}
-
-void SettingsWindow::_unregisterRawInput()
-{
-    RAWINPUTDEVICE rid;
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x06;
-    rid.dwFlags = RIDEV_REMOVE;
-    rid.hwndTarget = NULL;
-    RegisterRawInputDevices(&rid, 1, sizeof(rid));
-}
-
 void SettingsWindow::closeEvent(QCloseEvent* event)
 {
     if (_isCapturing) _endCapture(true);
@@ -382,46 +371,6 @@ void SettingsWindow::closeEvent(QCloseEvent* event)
 
 bool SettingsWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
 {
-    // Immediately cast void pointer as Windows specific messsage.
-    // There is no way to avoid using a void pointer.
-    // If it ever ISN'T a "MSG*", this will break.
-    MSG* msg = static_cast<MSG*>(message);
-    if (msg->message == WM_INPUT && _isCapturing)
-    {
-        UINT size = 0;
-        GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, NULL, &size, sizeof(RAWINPUTHEADER));
-        QByteArray buffer(size, 0);
-        GetRawInputData((HRAWINPUT)msg->lParam, RID_INPUT, buffer.data(), &size, sizeof(RAWINPUTHEADER));
-
-        RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buffer.data());
-        if (raw->header.dwType == RIM_TYPEKEYBOARD)
-        {
-            const RAWKEYBOARD& kb = raw->data.keyboard;
-            if (kb.Flags & RI_KEY_BREAK)
-            {
-                switch (kb.VKey)
-                {
-                    case VK_CONTROL:
-                    case VK_SHIFT:
-                    case VK_MENU:
-                    case VK_LWIN:
-                    case VK_RWIN: break;
-                    default:
-                        HotkeyData data;
-                        data.vk = kb.VKey;
-                        data.modifiers = MOD_NOREPEAT;
-                        if (GetKeyState(VK_CONTROL) & 0x8000) data.modifiers |= MOD_CONTROL;
-                        if (GetKeyState(VK_SHIFT) & 0x8000) data.modifiers |= MOD_SHIFT;
-                        if (GetKeyState(VK_MENU) & 0x8000) data.modifiers |= MOD_ALT;
-                        if (GetKeyState(VK_LWIN) & 0x8000) data.modifiers |= MOD_WIN;
-                        if (GetKeyState(VK_RWIN) & 0x8000) data.modifiers |= MOD_WIN;
-                        _endCapture(false);
-                        _setCurrent(_capturingId, data);
-                        break;
-                }
-            }
-        }
-        return false;
-    }
+    if (_keyCaptureManager->handleNativeEvent(eventType, message, result)) return true;
     return QWidget::nativeEvent(eventType, message, result);
 }

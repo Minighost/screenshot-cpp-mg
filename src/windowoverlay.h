@@ -2,8 +2,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QRect>
-#include <windows.h>
-#include "platform/platform.h"
+#include "platform.h"
 
 class WindowOverlay : public QWidget
 {

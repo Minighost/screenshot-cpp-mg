@@ -1,6 +1,5 @@
 #pragma once
 #include "../windowpicker.h"
-#include <windows.h>
 
 class WinWindowPicker : public WindowPicker
 {

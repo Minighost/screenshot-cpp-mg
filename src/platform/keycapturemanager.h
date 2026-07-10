@@ -11,6 +11,7 @@ class KeyCaptureManager : public QObject
 
     virtual void startCapture(WId windowId) = 0;
     virtual void stopCapture() = 0;
+    virtual bool handleNativeEvent(const QByteArray& eventType, void* message, qintptr* result) = 0;
 
    signals:
     void keyCaptured(quint32 vk, quint32 modifiers);

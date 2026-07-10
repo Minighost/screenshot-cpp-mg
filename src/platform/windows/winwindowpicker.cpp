@@ -1,4 +1,5 @@
 #include "winwindowpicker.h"
+#include <windows.h>
 #include <dwmapi.h>
 
 struct HitTestData

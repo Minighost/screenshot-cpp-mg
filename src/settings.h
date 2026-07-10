@@ -5,8 +5,8 @@
 #include <QMap>
 #include <QCheckBox>
 #include <QComboBox>
-#include <windows.h>
 #include "types.h"
+#include "keycapturemanager.h"
 
 struct HotkeyRow
 {
@@ -52,6 +52,6 @@ class SettingsWindow : public QWidget
     void _save();
     void _loadSettings();
     void _updateStatusLabel();
-    void _registerRawInput();
-    void _unregisterRawInput();
+
+    KeyCaptureManager* _keyCaptureManager;
 };
