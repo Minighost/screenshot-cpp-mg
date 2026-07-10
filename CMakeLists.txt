@@ -13,7 +13,6 @@ qt_add_executable(screenshot-cpp-mg WIN32
     src/preview.h
     src/utils.cpp
     src/utils.h
-    src/communicator.h
     src/drawcommands.h
     src/settings.cpp
     src/settings.h

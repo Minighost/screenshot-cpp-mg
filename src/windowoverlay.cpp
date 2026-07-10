@@ -8,36 +8,8 @@
 #include <QCursor>
 #include <QSettings>
 // #include <QDebug>
-#include <dwmapi.h>
 #include "utils.h"
 #include "preview.h"
-
-struct HitTestData
-{
-    POINT pt;
-    HWND ownHwnd;
-    HWND result;
-};
-
-static BOOL CALLBACK findWindowAtPoint(HWND hwnd, LPARAM lParam)
-{
-    HitTestData* data = reinterpret_cast<HitTestData*>(lParam);
-    if (hwnd == data->ownHwnd) return TRUE;
-    if (!IsWindowVisible(hwnd)) return TRUE;
-
-    LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-    if ((exStyle & WS_EX_TOOLWINDOW) && (exStyle & WS_EX_TOPMOST)) return TRUE;
-
-    RECT wr;
-    if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &wr, sizeof(wr)))) { GetWindowRect(hwnd, &wr); }
-
-    if (PtInRect(&wr, data->pt))
-    {
-        data->result = hwnd;
-        return FALSE;
-    }
-    return TRUE;
-}
 
 WindowOverlay::WindowOverlay(QWidget* parent)
     : QWidget(parent, Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint | Qt::Tool),
