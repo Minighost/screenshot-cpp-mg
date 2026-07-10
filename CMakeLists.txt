@@ -5,6 +5,7 @@ set(CMAKE_PREFIX_PATH "C:/Qt/6.11.1/msvc2022_64")
 set(CMAKE_AUTOMOC ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
 qt_add_executable(screenshot-cpp-mg WIN32
+    src/app.rc
     src/main.cpp
     src/captureoverlay.cpp
     src/captureoverlay.h
@@ -19,7 +20,9 @@ qt_add_executable(screenshot-cpp-mg WIN32
     src/windowoverlay.cpp
     src/windowoverlay.h
     src/types.h
-    src/app.rc
+    src/platform/hotkeymanager.h
+    src/platform/keycapturemanager.h
+    src/platform/windowpicker.h
 )
 target_include_directories(screenshot-cpp-mg PRIVATE src)
 qt_add_resources(screenshot-cpp-mg "resources"
