@@ -23,8 +23,20 @@ qt_add_executable(screenshot-cpp-mg WIN32
     src/platform/hotkeymanager.h
     src/platform/keycapturemanager.h
     src/platform/windowpicker.h
+    src/platform/platform.h
 )
-target_include_directories(screenshot-cpp-mg PRIVATE src)
+if(WIN32)
+    target_sources(screenshot-cpp-mg PRIVATE
+        src/platform/windows/platform_windows.cpp
+        src/platform/windows/winwindowpicker.cpp
+        src/platform/windows/winwindowpicker.h
+        src/platform/windows/winhotkeymanager.cpp
+        src/platform/windows/winhotkeymanager.h
+        src/platform/windows/winkeycapturemanager.cpp
+        src/platform/windows/winkeycapturemanager.h
+    )
+endif()
+target_include_directories(screenshot-cpp-mg PRIVATE src src/platform)
 qt_add_resources(screenshot-cpp-mg "resources"
     PREFIX "/"
     BASE "assets"
